@@ -1,16 +1,12 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
  
-const {
-  criarUsuario,
-  buscarPerfil,
-} = require('../controllers/usuarioController');
+import { criarUsuario, buscarPerfil } from '../controller/usuarioController.js';
  
 // Precisa vir antes de "/:id" para não ser interpretada como um ID
-router.get('/ranking', ranking);
  
-router.post('/', criarUsuario);
-router.get('/:id', buscarPerfil);
+router.post('/users/create', criarUsuario);
+router.get('/users/:id', buscarPerfil);
 
  
-module.exports = router;
+export default router;
