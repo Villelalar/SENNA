@@ -124,4 +124,4 @@ pense-bem/
 
 ## Autor
 
-Desenvolvido por Larissa Villela, Pedro Henrique , Matheus Gomes e Thomas Andrew como projeto acadêmico.
+Desenvolvido por Larissa Villela, Pedro Henrique , Matheus Gomes e Thomas Andrew e Bernardo Arce como projeto acadêmico.
