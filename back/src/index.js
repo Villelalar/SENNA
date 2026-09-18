@@ -3,46 +3,22 @@ dotenv.config()
 import express from 'express'
 import mongoose from 'mongoose'
 import swaggerUi from 'swagger-ui-express'
+import routes from './route/routes.js'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import YAML from 'yaml'
 
 
 const app = express()
 app.use(express.json())
 
-const swaggerDocument = {
-    openapi: '3.0.0',
-    info: {
-        title: 'Senna API',
-        version: '1.0.0',
-        description: 'Documentacao da API do projeto Pense Bem',
-    },
-    servers: [{ url: 'http://localhost:3000' }],
-    paths: {
-        '/health': {
-            get: {
-                summary: 'Verifica se a API esta funcionando',
-                responses: {
-                    200: {
-                        description: 'API funcionando',
-                        content: {
-                            'application/json': {
-                                schema: {
-                                    type: 'object',
-                                    properties: {
-                                        status: { type: 'string', example: 'ok' },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    },
-}
+const swaggerPath = fileURLToPath(new URL('../swagger.yml', import.meta.url))
+const swaggerDocument = YAML.parse(readFileSync(swaggerPath, 'utf8'))
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' })
 })
+app.use('/api', routes)
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 app.get('/api-docs.json', (req, res) => {
     res.json(swaggerDocument)
