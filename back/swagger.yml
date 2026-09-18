@@ -66,3 +66,29 @@ paths:
           description: Usuario encontrado
         '404':
           description: Usuario nao encontrado
+  /api/users/login:
+    post:
+      summary: Realiza o login do usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - senha
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: maria@email.com
+                senha:
+                  type: string
+                  format: password
+                  example: '123456'
+      responses:
+        '200':
+          description: Login bem-sucedido
+        '401':
+          description: E-mail ou senha inválidos

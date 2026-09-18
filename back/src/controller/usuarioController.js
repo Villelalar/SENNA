@@ -1,18 +1,18 @@
 import Usuario from '../models/usuario.js'
+import {validarLogin,validarCadastro} from '../service/validarLogin.js'
 
 export async function criarUsuario(req, res) {
+
 	try {
-		const { nome, email, senha } = req.body
+		
+		const { nome, email, senha } = await validarCadastro(req,res)
 
-		if (!nome || !email || !senha) {
-			return res.status(400).json({ erro: 'nome, email e senha são obrigatórios' })
-		}
-
-		const usuario = await Usuario.create({ nome, email, senha })
-		const usuarioSemSenha = usuario.toObject()
+		const usuarioCriado = await Usuario.create({ nome, email, senha })
+		const usuarioSemSenha = usuarioCriado.toObject()
 		delete usuarioSemSenha.senha
 
 		return res.status(201).json(usuarioSemSenha)
+
 	} catch (error) {
 		if (error.code === 11000) {
 			return res.status(409).json({ erro: 'E-mail já cadastrado' })
@@ -33,5 +33,21 @@ export async function buscarPerfil(req, res) {
 		return res.json(usuario)
 	} catch (error) {
 		return res.status(400).json({ erro: 'ID de usuário inválido' })
+	}
+}
+
+export async function loginUsuario(req, res) {
+	try {
+		
+		const usuario = await validarLogin(req,res)
+		const usuarioSemSenha = usuario.toObject()
+		delete usuarioSemSenha.senha
+
+		return res.status(200).json( usuarioSemSenha )
+
+	} catch (error) {
+		if (error.code === 11000) {
+			return res.status(409).json({ erro: 'E-mail já cadastrado' })
+		}
 	}
 }
