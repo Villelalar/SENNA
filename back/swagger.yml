@@ -92,3 +92,146 @@ paths:
           description: Login bem-sucedido
         '401':
           description: E-mail ou senha inválidos
+  /api/livros:
+    get:
+      summary: Lista os livros (programas)
+      responses:
+        '200':
+          description: Lista de livros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Livro'
+  /api/livros/{codigo}:
+    get:
+      summary: Busca um livro pelo codigo
+      parameters:
+        - $ref: '#/components/parameters/CodigoLivro'
+      responses:
+        '200':
+          description: Livro encontrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Livro'
+                  - type: object
+                    properties:
+                      totalPerguntas:
+                        type: integer
+                        example: 30
+        '404':
+          description: Livro nao encontrado
+  /api/livros/{codigo}/perguntas:
+    get:
+      summary: Lista as perguntas de um livro (sem a resposta correta)
+      parameters:
+        - $ref: '#/components/parameters/CodigoLivro'
+        - name: categoria
+          in: query
+          required: false
+          schema:
+            type: string
+            example: Ayrton Senna
+      responses:
+        '200':
+          description: Lista de perguntas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pergunta'
+        '404':
+          description: Livro nao encontrado
+  /api/livros/{codigo}/perguntas/{numero}:
+    get:
+      summary: Busca uma pergunta do livro pelo numero (sem a resposta correta)
+      parameters:
+        - $ref: '#/components/parameters/CodigoLivro'
+        - name: numero
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 13
+      responses:
+        '200':
+          description: Pergunta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pergunta'
+        '400':
+          description: Numero da pergunta invalido
+        '404':
+          description: Livro ou pergunta nao encontrados
+  /api/jogos:
+    get:
+      summary: Lista os modos de jogo disponiveis
+      responses:
+        '200':
+          description: Catalogo de jogos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Jogo'
+components:
+  parameters:
+    CodigoLivro:
+      name: codigo
+      in: path
+      required: true
+      schema:
+        type: string
+        example: '011'
+  schemas:
+    Livro:
+      type: object
+      properties:
+        _id:
+          type: string
+        codigo:
+          type: string
+          example: '011'
+        titulo:
+          type: string
+          example: Programa 1 – Ayrton Senna e o Brasil
+    Pergunta:
+      type: object
+      properties:
+        _id:
+          type: string
+        numero:
+          type: integer
+          example: 13
+        categoria:
+          type: string
+          example: Ayrton Senna
+        enunciado:
+          type: string
+          example: Ganhou o primeiro Grande Premio em 1985 no GP de ...... .
+        alternativas:
+          type: array
+          items:
+            type: string
+          example: [Mônaco, San Marino, Portugal, Luxemburgo]
+    Jogo:
+      type: object
+      properties:
+        slug:
+          type: string
+          example: aritmetica
+        nome:
+          type: string
+          example: Aritmética
+        descricao:
+          type: string
+          example: Contas misturando as quatro operações.
+        correcao:
+          type: string
+          enum: [servidor, cliente]

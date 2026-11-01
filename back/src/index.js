@@ -27,7 +27,7 @@ app.get('/api-docs.json', (req, res) => {
 // EVENT
 app.listen(3000, async () => {
     try {
-        const result = await mongoose.connect(process.env.MONGODB_URI)
+        const result = await mongoose.connect(process.env.MONGODB_URI, { dbName: process.env.DB_NAME })
         console.log(result ? "Database On" : "Database Off")
         console.log("Projeto ON")
     }
