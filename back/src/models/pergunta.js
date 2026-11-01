@@ -9,8 +9,8 @@ const perguntaSchema = new mongoose.Schema(
         alternativas: {
             type: [String],
             validate: {
-                validator: (valor) => valor.length >= 2,
-                message: 'A pergunta precisa de pelo menos 2 alternativas',
+                validator: (valor) => valor.length >= 4,
+                message: 'A pergunta precisa de pelo menos 4 alternativas',
             },
         },
         respostaCorreta: { type: String, required: true, select: false },

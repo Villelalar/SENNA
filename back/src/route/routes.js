@@ -1,12 +1,13 @@
 import express from 'express';
 const router = express.Router();
  
-import { criarUsuario, buscarPerfil, loginUsuario } from '../controller/usuarioController.js';
+import { criarUsuario, buscarPerfil, buscarPerfilPorNome, loginUsuario } from '../controller/usuarioController.js';
 import { listarLivros, buscarLivro, listarPerguntasDoLivro, buscarPerguntaDoLivro } from '../controller/livroController.js';
 import { listarJogos } from '../controller/jogoController.js';
  
 
 router.post('/users/create', criarUsuario);
+router.get('/users/nome/:nome', buscarPerfilPorNome);
 router.get('/users/:id', buscarPerfil);
 
 router.post('/users/login', loginUsuario);

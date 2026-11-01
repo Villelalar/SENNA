@@ -4,10 +4,10 @@ import express from 'express'
 import mongoose from 'mongoose'
 import swaggerUi from 'swagger-ui-express'
 import routes from './route/routes.js'
+import { rotaNaoEncontrada, tratadorDeErros } from './middleware/handler_err.js'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import YAML from 'yaml'
-
 
 const app = express()
 app.use(express.json())
@@ -23,6 +23,8 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 app.get('/api-docs.json', (req, res) => {
     res.json(swaggerDocument)
 })
+app.use(rotaNaoEncontrada)
+app.use(tratadorDeErros)
 
 // EVENT
 app.listen(3000, async () => {
