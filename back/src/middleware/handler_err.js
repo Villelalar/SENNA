@@ -16,4 +16,4 @@ function tratadorDeErros(err, req, res, next) {
   });
 }
 
-module.exports = { rotaNaoEncontrada, tratadorDeErros };
+export { rotaNaoEncontrada, tratadorDeErros };

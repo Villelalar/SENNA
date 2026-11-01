@@ -1,51 +1,44 @@
 import Usuario from '../models/usuario.js'
 import bcrypt from 'bcryptjs'
 
-export async function validarLogin(req,res) {
-
-    try {
-
-        const { email, senha } = req.body
-
-		if ( !email || !senha) {
-			return res.status(400).json({ erro: ' email e senha são obrigatórios' })
-		}
-
-        const usuario = await Usuario.findOne({ email })
-        if (!usuario) {
-            return res.status(401).json({ erro: 'E-mail  inválidos' })
-        }
-
-        const isMatch = await bcrypt.compare(senha, usuario.senha)
-        if (!isMatch) {
-            return res.status(401).json({ erro: 'senha inválida' })
-        }
-
-        return usuario
-        
-    } catch (error) {
-        throw new Error('E-mail ou senha inválidos')
-    }
+function erroHttp(status, mensagem) {
+    const erro = new Error(mensagem)
+    erro.status = status
+    return erro
 }
 
-export async function validarCadastro(req,res){
+export async function validarLogin({ email, senha } = {}) {
 
-    const { nome, email, senha } = req.body
+    if (!email || !senha) {
+        throw erroHttp(400, 'email e senha são obrigatórios')
+    }
 
-		if (!nome || !email || !senha) {
-			return res.status(400).json({ erro: 'nome, email e senha são obrigatórios' })
-		}
+    const usuario = await Usuario.findOne({ email: email.trim().toLowerCase() })
+    const isMatch = usuario && await bcrypt.compare(senha, usuario.senha)
 
-     const regex =/^[^\s@]+@gmail.com$/;
+    if (!isMatch) {
+        throw erroHttp(401, 'E-mail ou senha inválidos')
+    }
 
-        if (!regex.test(email)) {
-            return res.status(401).json({ erro: 'E-mail inválido, apenas domínio @gmail.com é permitido' })
-        }
+    return usuario
+}
 
-        if(senha.length > 8){
-            return res.status(401).json({ erro: 'Senha inválida, deve ter no máximo 8 caracteres' })
-        }
+export function validarCadastro({ nome, email, senha } = {}) {
 
-        return { nome, email, senha };
+    if (!nome || !email || !senha) {
+        throw erroHttp(400, 'nome, email e senha são obrigatórios')
+    }
 
+    const emailNormalizado = email.trim().toLowerCase()
+    const regex = /^[^\s@]+@gmail\.com$/
+
+    if (!regex.test(emailNormalizado)) {
+        throw erroHttp(400, 'E-mail inválido, apenas domínio @gmail.com é permitido')
+    }
+
+    if (senha.length > 8) {
+        throw erroHttp(400, 'Senha inválida, deve ter no máximo 8 caracteres')
+    }
+
+    return { nome, email: emailNormalizado, senha }
 }
