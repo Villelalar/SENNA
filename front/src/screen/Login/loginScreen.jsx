@@ -3,6 +3,7 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
+
 import {
   Alert,
   Image,
@@ -32,15 +33,35 @@ export default function LoginScreen() {
     }
   }
 
-  function entrar() {
+  async function entrar() {
+
     if (!email.trim() || !senha.trim()) {
       mostrarAviso("Atenção", "Preencha o email e a senha.");
       return;
     }
+        try {
+          const data = await fetch("http://localhost:3000/api/users/login", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, senha }),
+          });  
 
-    // Navegação para teste, sem autenticação no backend.
-    router.replace("/home");
-  }
+          const response = await data.json();
+          console.log(data.status, response);
+
+        if (data.status == 200) {
+          console.log("Login bem-sucedido:", data); 
+           mostrarAviso("Sucesso", "Login realizado Com Sucesso: "); 
+           router.replace({ pathname: "/home" , params: { nome: response.nome } });
+        }else {
+          mostrarAviso("Erro", "Falha ao realizar login: "  + response.erro);
+        }
+        }catch (error) {
+          mostrarAviso("Erro", "Falha ao realizar login: " + error.message);
+        }
+
+
+}
 
   function emBreve() {
     mostrarAviso("Em breve", "Esta opção está indisponível.");

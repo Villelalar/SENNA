@@ -8,9 +8,11 @@ import { rotaNaoEncontrada, tratadorDeErros } from './middleware/handler_err.js'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import YAML from 'yaml'
+import cors from 'cors';
 
-const app = express()
-app.use(express.json())
+const app = express();
+app.use(cors());
+app.use(express.json());
 
 const swaggerPath = fileURLToPath(new URL('../swagger.yml', import.meta.url))
 const swaggerDocument = YAML.parse(readFileSync(swaggerPath, 'utf8'))

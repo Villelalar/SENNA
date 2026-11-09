@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   Alert,
   Image,
@@ -15,6 +16,12 @@ import {
 const fonte = Platform.OS === "ios" ? "Courier New" : "monospace";
 
 export default function SignUpScreen() {
+
+  const [dataNascimento, setDataNascimento] = useState("");
+  const [nome, setNome] = useState("");
+  const [sobrenome, setSobrenome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const router = useRouter();
   const { height } = useWindowDimensions();
 
@@ -26,11 +33,35 @@ export default function SignUpScreen() {
     }
   }
 
-  function cadastrar() {
-    mostrarAviso(
-      "Cadastro",
-      "O cadastro ainda precisa ser conectado ao backend.",
-    );
+  async function cadastrar() {
+    
+    if (!email.trim() || !senha.trim() || !nome.trim() || !sobrenome.trim() || !dataNascimento.trim()) {
+      mostrarAviso("Atenção", "Preencha todos os campos.");
+      return;
+    }
+    const nomeCompleto = `${nome.trim()} ${sobrenome.trim()}`;
+    console.log("Dados do cadastro:", { nomeCompleto, email, senha, dataNascimento });
+
+        try {
+          const data = await fetch("http://localhost:3000/api/users/create", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome: nomeCompleto, email, senha }),
+          });  
+
+          const response = await data.json();
+          console.log(data.status, response);
+
+        if (data.status == 201) {
+          console.log("Cadastro bem-sucedido:", data); 
+           mostrarAviso("Sucesso", "Cadastro realizado com sucesso: "); 
+           router.replace("/");
+        }else {
+          mostrarAviso("Erro", "Falha ao realizar cadastro: "  + response.erro);
+        }
+        }catch (error) {
+          mostrarAviso("Erro", "Falha ao realizar cadastro: " + error.message);
+        }
   }
 
   function entrarComGoogle() {
@@ -83,6 +114,8 @@ export default function SignUpScreen() {
               placeholder="Data de nascimento (DD/MM/AAAA)"
               placeholderTextColor="#777"
               keyboardType="numbers-and-punctuation"
+              onChangeText={setDataNascimento}
+              value={dataNascimento}
             />
 
             <TextInput
@@ -90,6 +123,8 @@ export default function SignUpScreen() {
               placeholder="Nome"
               placeholderTextColor="#777"
               autoCapitalize="words"
+              onChangeText={setNome}
+              value={nome}
             />
 
             <TextInput
@@ -97,6 +132,8 @@ export default function SignUpScreen() {
               placeholder="Sobrenome"
               placeholderTextColor="#777"
               autoCapitalize="words"
+              onChangeText={setSobrenome}
+              value={sobrenome}
             />
 
             <TextInput
@@ -107,6 +144,8 @@ export default function SignUpScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
+              value={email}
+              onChangeText={setEmail}
             />
 
             <TextInput
@@ -117,6 +156,8 @@ export default function SignUpScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="new-password"
+              onChangeText={setSenha}
+              value={senha}
             />
 
             <Pressable
