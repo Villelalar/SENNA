@@ -1,0 +1,60 @@
+flowchart LR
+    subgraph ROTAS["1 · Rotas (src/app)"]
+        direction TB
+        r0["_layout.tsx<br/>Stack sem cabeçalho"]
+        r1["index.tsx<br/>Redirect para /login"]
+        r2["login.jsx"]
+        r3["signup.jsx"]
+        r4["home.jsx"]
+        r5["book.jsx"]
+        r6["games.jsx"]
+        r7["jogocap.jsx"]
+        r8["acertopag.jsx"]
+        r9["fimprograma.jsx"]
+    end
+    subgraph TELAS["2 · Telas (src/screen)"]
+        direction TB
+        s2["Login/loginScreen"]
+        s3["SignUp/signUpScreen"]
+        s4["Home/homeScreen"]
+        s5["Books/bookScreen"]
+        s6["Games/gameScreen"]
+        s7["JogoCap/jogoCapScreen"]
+        s8["AcertoPag/acertoScreen"]
+        s9["FimPrograma/fimProgramaScreen"]
+    end
+    subgraph COMP["3 · Componentes (src/components)"]
+        direction TB
+        c1["CardLivroEscolhido.jsx"]
+        c2["CardPrograma.jsx"]
+    end
+    subgraph CSS["4 · Estilos"]
+        direction TB
+        e1["booksScreen.css<br/>GLOBAL"]
+        e2["gamesScreen.css<br/>GLOBAL"]
+        e3["CardLivroEscolhido.module.css<br/>escopo do componente"]
+        e4["CardPrograma.module.css<br/>escopo do componente"]
+    end
+    subgraph LIBS["5 · Bibliotecas"]
+        direction TB
+        l1["expo-router<br/>useRouter · usePathname"]
+        l2["@mui/icons-material"]
+        l3["react-native<br/>react-native-web"]
+    end
+    BACK[("Back-end Express /api<br/>SOMENTE LEITURA<br/>ainda não consumido")]
+    r2 --> s2
+    r3 --> s3
+    r4 --> s4
+    r5 --> s5
+    r6 --> s6
+    r7 --> s7
+    r8 --> s8
+    r9 --> s9
+    s5 --> c1
+    s5 --> c2
+    s5 --> e1
+    s6 --> e2
+    c1 --> e3
+    c2 --> e4
+    TELAS -.->|usa| LIBS
+    TELAS -.->|futuro| BACK

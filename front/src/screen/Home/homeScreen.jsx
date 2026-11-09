@@ -1,8 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import { useLocalSearchParams } from 'expo-router';
-
 import {
   Alert,
   ImageBackground,
@@ -52,10 +50,6 @@ const opcoes = [
 ];
 
 export default function HomeScreen() {
-
-  const {nome} = useLocalSearchParams();
-  const inicial = nome ? nome.charAt(0).toUpperCase() : "";
-
   const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [menuAberto, setMenuAberto] = useState(false);
@@ -133,7 +127,7 @@ export default function HomeScreen() {
                   accessibilityLabel="Abrir perfil"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.nomePerfil}>{inicial}</Text>
+                  <Text style={styles.nomePerfil}>L</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
