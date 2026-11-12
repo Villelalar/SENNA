@@ -32,14 +32,42 @@ export default function LoginScreen() {
     }
   }
 
-  function entrar() {
+  async function entrar() {
     if (!email.trim() || !senha.trim()) {
       mostrarAviso("Atenção", "Preencha o email e a senha.");
       return;
     }
 
-    // Navegação para teste, sem autenticação no backend.
-    router.replace("/home");
+    const apiUrl = (
+      process.env.EXPO_PUBLIC_API_URL?.trim() || "http://localhost:3000"
+    ).replace(/\/+$/, "");
+
+    let resposta;
+
+    try {
+      resposta = await fetch(`${apiUrl}/api/users/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), senha }),
+      });
+    } catch {
+      mostrarAviso("Erro", "Não foi possível conectar ao servidor de login.");
+      return;
+    }
+
+    const usuario = await resposta.json().catch(() => null);
+
+    if (!resposta.ok) {
+      mostrarAviso("Erro", usuario?.erro || "Não foi possível realizar o login.");
+      return;
+    }
+
+    if (typeof usuario?.nome !== "string" || !usuario.nome.trim()) {
+      mostrarAviso("Erro", "O servidor retornou uma resposta de login inválida.");
+      return;
+    }
+
+    router.replace({ pathname: "/home", params: { nome: usuario.nome } });
   }
 
   function emBreve() {

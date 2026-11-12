@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -18,6 +19,13 @@ export default function SignUpScreen() {
   const router = useRouter();
   const { height } = useWindowDimensions();
 
+  const [dataNascimento, setDataNascimento] = useState("");
+  const [nome, setNome] = useState("");
+  const [sobrenome, setSobrenome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const cadastroEmAndamento = useRef(false);
+
   function mostrarAviso(titulo, mensagem) {
     if (Platform.OS === "web") {
       window.alert(`${titulo}\n\n${mensagem}`);
@@ -26,11 +34,51 @@ export default function SignUpScreen() {
     }
   }
 
-  function cadastrar() {
-    mostrarAviso(
-      "Cadastro",
-      "O cadastro ainda precisa ser conectado ao backend.",
-    );
+  async function cadastrar() {
+    if (cadastroEmAndamento.current) return;
+
+    if (
+      !dataNascimento.trim() ||
+      !nome.trim() ||
+      !sobrenome.trim() ||
+      !email.trim() ||
+      !senha.trim()
+    ) {
+      mostrarAviso("Atenção", "Preencha todos os campos.");
+      return;
+    }
+
+    const apiUrl = (
+      process.env.EXPO_PUBLIC_API_URL?.trim() || "http://localhost:3000"
+    ).replace(/\/+$/, "");
+
+    const nomeCompleto = `${nome.trim()} ${sobrenome.trim()}`;
+    cadastroEmAndamento.current = true;
+
+    try {
+      const resposta = await fetch(`${apiUrl}/api/users/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: nomeCompleto,
+          email: email.trim(),
+          senha,
+        }),
+      });
+
+      if (resposta.status !== 201) {
+        const dados = await resposta.json().catch(() => null);
+        mostrarAviso("Erro", dados?.erro || "Não foi possível realizar o cadastro.");
+        return;
+      }
+
+      mostrarAviso("Sucesso", "Cadastro realizado com sucesso.");
+      router.replace("/login");
+    } catch {
+      mostrarAviso("Erro", "Não foi possível conectar ao servidor de cadastro.");
+    } finally {
+      cadastroEmAndamento.current = false;
+    }
   }
 
   function entrarComGoogle() {
@@ -81,6 +129,8 @@ export default function SignUpScreen() {
             <TextInput
               style={styles.input}
               placeholder="Data de nascimento (DD/MM/AAAA)"
+              value={dataNascimento}
+              onChangeText={setDataNascimento}
               placeholderTextColor="#777"
               keyboardType="numbers-and-punctuation"
             />
@@ -88,6 +138,8 @@ export default function SignUpScreen() {
             <TextInput
               style={styles.input}
               placeholder="Nome"
+              value={nome}
+              onChangeText={setNome}
               placeholderTextColor="#777"
               autoCapitalize="words"
             />
@@ -95,6 +147,8 @@ export default function SignUpScreen() {
             <TextInput
               style={styles.input}
               placeholder="Sobrenome"
+              value={sobrenome}
+              onChangeText={setSobrenome}
               placeholderTextColor="#777"
               autoCapitalize="words"
             />
@@ -102,6 +156,8 @@ export default function SignUpScreen() {
             <TextInput
               style={styles.input}
               placeholder="E-mail"
+              value={email}
+              onChangeText={setEmail}
               placeholderTextColor="#777"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -112,6 +168,8 @@ export default function SignUpScreen() {
             <TextInput
               style={styles.input}
               placeholder="Sua senha"
+              value={senha}
+              onChangeText={setSenha}
               placeholderTextColor="#777"
               secureTextEntry
               autoCapitalize="none"

@@ -1,1 +1,1 @@
-export {default} from '../screen/Games/gameScreen'
+export { default } from "../screen/Games/gameScreen";

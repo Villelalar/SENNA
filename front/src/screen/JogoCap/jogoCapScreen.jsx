@@ -1,523 +1,327 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-
+import { useState } from "react";
 import {
-  Alert,
-  TouchableOpacity,
-  KeyboardAvoidingView,
+  ImageBackground,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  ImageBackground,
-  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import {
+  criarPerguntas,
+  novaPartida,
+  programaDisponivel,
+  programas,
+  registrarResposta,
+} from "../../data/partida";
+import AcertoScreen from "../AcertoPag/acertoScreen";
+import FimProgramaScreen from "../FimPrograma/fimProgramaScreen";
+
+const letras = ["A", "B", "C", "D"];
+const cores = ["#db292b", "#ffd500", "#1963c2", "#2b8031"];
+
 export default function JogoCapScreen() {
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
+  const { programa = "011" } = useLocalSearchParams();
+  const escolhido = programas.find((item) => item.codigo === programa);
+
+  if (!escolhido || !programaDisponivel(escolhido)) {
+    return (
+      <View style={styles.erro}>
+        <Text style={styles.pergunta}>
+          {escolhido
+            ? "O gabarito deste programa está incompleto."
+            : "Programa não encontrado."}
+        </Text>
+        <Pressable
+          style={styles.botaoBranco}
+          onPress={() => router.replace("/games")}
+        >
+          <Text style={styles.negrito}>Ver programas</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return <Partida key={escolhido.codigo} programa={escolhido} />;
+}
+
+function Partida({ programa }) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [perguntas, setPerguntas] = useState(() => criarPerguntas(programa));
+  const [partida, setPartida] = useState(novaPartida);
 
-  const telaEstreita = width < 360;
-  const telaBaixa = height < 700;
-
-  const margem = telaEstreita ? 16 : 20;
-
-  const larguraConteudo = Math.max(
-    0,
-    Math.min(
-      width - margem * 2 - insets.left - insets.right,
-      400
-    )
-  );
-
-  const espacoBotoes = 10;
-  const larguraBotao = (larguraConteudo - espacoBotoes) / 2;
-
-  // Os botões diminuem em telas baixas, sem impedir a rolagem.
-  const alturaDisponivel = height - insets.top - insets.bottom;
-  const alturaBotao = Math.max(
-    112,
-    Math.min(
-      larguraBotao * 1.13,
-      (alturaDisponivel - 330) / 2,
-      180
-    )
-  );
-
-  function opcaoIndisponivel() {
-    if (Platform.OS === "web") {
-      window.alert("Esta opção está indisponível.");
+  function voltar() {
+    if (router.canGoBack()) {
+      router.back();
     } else {
-      Alert.alert(
-        "Opção indisponível",
-        "Esta opção está indisponível."
-      );
+      router.replace("/games");
     }
   }
 
+  function reiniciar() {
+    setPerguntas(criarPerguntas(programa));
+    setPartida(novaPartida());
+  }
+
+  function avancar() {
+    setPartida((atual) => {
+      if (!atual.resultado || atual.indice !== partida.indice) return atual;
+
+      return {
+        ...atual,
+        indice: atual.indice + 1,
+        descartadas: [],
+        resultado: null,
+      };
+    });
+  }
+
+  const total = perguntas.length;
+  const numero = partida.indice + 1;
+
+  if (partida.indice === total) {
+    return (
+      <FimProgramaScreen
+        programa={programa.codigo}
+        pontos={partida.pontos}
+        pontosMaximos={total * 3}
+        totais={partida.totais}
+        onVoltar={voltar}
+        onJogarDeNovo={reiniciar}
+      />
+    );
+  }
+
+  if (partida.resultado) {
+    return (
+      <AcertoScreen
+        programa={programa.codigo}
+        numero={numero}
+        total={total}
+        pontos={partida.pontos}
+        resultado={partida.resultado}
+        onProxima={avancar}
+      />
+    );
+  }
+
+  const pergunta = perguntas[partida.indice];
+  const tentativa = partida.descartadas.length + 1;
+
+  function responder(indice) {
+    setPartida((atual) => {
+      if (atual.indice !== partida.indice) return atual;
+      return registrarResposta(atual, indice, pergunta.resposta);
+    });
+  }
+
   return (
-    <KeyboardAvoidingView
-      style={styles.tela}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    <ImageBackground
+      source={require("../../../assets/nuvens.png")}
+      style={styles.fundo}
+      resizeMode="cover"
     >
       <StatusBar style="dark" />
-
-      <ImageBackground
-        source={require("../../../assets/nuvens.png")}
-        style={styles.fundo}
-        resizeMode="cover"
+      <ScrollView
+        contentContainerStyle={[
+          styles.rolagem,
+          {
+            paddingTop: insets.top + 12,
+            paddingBottom: insets.bottom + 16,
+            paddingLeft: insets.left + 16,
+            paddingRight: insets.right + 16,
+          },
+        ]}
       >
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollConteudo,
-            {
-              paddingTop: insets.top + (telaBaixa ? 18 : 24),
-              paddingBottom: insets.bottom + 24,
-              paddingLeft: margem + insets.left,
-              paddingRight: margem + insets.right,
-            },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={{ width: larguraConteudo }}>
-            <View style={styles.thatTop}>
-              <View style={styles.btnView}>
-                <TouchableOpacity
-                  style={styles.goBackBTN}
-                  onPress={() => {
-                    if (router.canGoBack()) {
-                      router.back();
-                    } else {
-                      router.replace("/home");
-                    }
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Voltar"
-                >
-                  <Text style={styles.btnGoBackTxt}>{"‹"}</Text>
-                </TouchableOpacity>
-              </View>
+        <View style={styles.conteudo}>
+          <View style={styles.cabecalho}>
+            <Pressable
+              style={styles.voltar}
+              onPress={voltar}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar"
+            >
+              <Text style={styles.seta}>‹</Text>
+            </Pressable>
 
-              <View style={styles.topTxts}>
-                <Text style={styles.capituloTxt1}>Capítulo 1</Text>
-                <Text style={styles.capituloTxt2}>
-                  Início Ayrton Senna
-                </Text>
-              </View>
-
-              <View style={styles.ptsView}>
-                <View style={styles.pstBackGround}>
-                  <Text style={styles.pstTxt}>★ 0 pts</Text>
-                </View>
-              </View>
+            <View style={styles.titulo}>
+              <Text style={styles.pequeno}>Pense Bem: Fórmula 1</Text>
+              <Text style={styles.negrito}>{programa.titulo}</Text>
             </View>
 
-            <View style={styles.middleView}>
-              <View style={styles.countView}>
-                <View>
-                  <Text style={styles.tectoyTxt}>TECTOY</Text>
-                </View>
+            <Text style={styles.placar}>★ {partida.pontos} pts</Text>
+          </View>
 
-                <View style={styles.visor}>
-                  <Text
-                    style={[
-                      styles.visorTxt,
-                      { fontSize: telaEstreita ? 34 : 40 },
-                    ]}
-                    adjustsFontSizeToFit
-                    numberOfLines={1}
-                  >
-                    {"021->1:"}
-                  </Text>
-                </View>
+          <View style={styles.painel}>
+            <Text style={styles.marca}>TECTOY</Text>
 
-                <View style={styles.tentativasView}>
-                  <View style={styles.bolinhaAtiva} />
-                  <View style={styles.bolinha} />
-                  <View style={styles.bolinha} />
+            <View style={styles.visor}>
+              <Text
+                style={styles.codigo}
+                adjustsFontSizeToFit
+                numberOfLines={1}
+              >
+                {programa.codigo} → {numero}
+              </Text>
+            </View>
 
-                  <Text style={styles.tentativaTxt}>
-                    Tentativa 1 de 3
-                  </Text>
-                </View>
-              </View>
+            <Text style={styles.pequeno}>Tentativa {tentativa} de 3</Text>
+            <Text accessibilityRole="header" style={styles.pergunta}>
+              {pergunta.enunciado}
+            </Text>
 
-              <View style={styles.respostasView}>
-                <View style={styles.linhaRespostas}>
-                  <View style={{ width: larguraBotao }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.respostaBTN,
-                        styles.respostaA,
-                        { minHeight: alturaBotao },
-                      ]}
-                      onPress={opcaoIndisponivel}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel="Resposta A"
-                    >
-                      <View>
-                        <Text style={styles.respostaTxt}>A</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
+            {pergunta.numero !== numero && (
+              <Text style={styles.pequeno}>
+                Questão {pergunta.numero} no livro
+              </Text>
+            )}
 
-                  <View style={{ width: larguraBotao }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.respostaBTN,
-                        styles.respostaB,
-                        { minHeight: alturaBotao },
-                      ]}
-                      onPress={opcaoIndisponivel}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel="Resposta B"
-                    >
-                      <View>
-                        <Text
-                          style={[
-                            styles.respostaTxt,
-                            styles.respostaTxtEscuro,
-                          ]}
-                        >
-                          B
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+            {tentativa > 1 && (
+              <Text style={styles.aviso} accessibilityLiveRegion="polite">
+                Resposta incorreta. Tente novamente.
+              </Text>
+            )}
+          </View>
 
-                <View style={styles.linhaRespostas}>
-                  <View style={{ width: larguraBotao }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.respostaBTN,
-                        styles.respostaC,
-                        { minHeight: alturaBotao },
-                      ]}
-                      onPress={opcaoIndisponivel}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel="Resposta C"
-                    >
-                      <View>
-                        <Text style={styles.respostaTxt}>C</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
+          <View style={styles.grade}>
+            {pergunta.alternativas.map((alternativa, indice) => {
+              const descartada = partida.descartadas.includes(indice);
+              const corTexto = indice === 1 ? "#171719" : "#fff";
 
-                  <View style={{ width: larguraBotao }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.respostaBTN,
-                        styles.respostaD,
-                        { minHeight: alturaBotao },
-                      ]}
-                      onPress={opcaoIndisponivel}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel="Resposta D"
-                    >
-                      <View>
-                        <Text style={styles.respostaTxt}>D</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.progressoView}>
-                <View>
-                  <Text style={styles.perguntaTxt}>
-                    Pergunta 1 de 30
-                  </Text>
-
-                  <View
-                    style={styles.barraProgresso}
-                    accessibilityRole="progressbar"
-                    accessibilityValue={{
-                      min: 0,
-                      max: 30,
-                      now: 1,
-                    }}
-                  >
-                    <View style={styles.barraPreenchida} />
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.reiniciarView}>
-                <TouchableOpacity
-                  style={styles.reiniciarBTN}
-                  onPress={opcaoIndisponivel}
-                  activeOpacity={0.8}
+              return (
+                <Pressable
+                  key={letras[indice]}
                   accessibilityRole="button"
+                  accessibilityLabel={`${letras[indice]}. ${alternativa}`}
+                  accessibilityState={{ disabled: descartada }}
+                  disabled={descartada}
+                  onPress={() => responder(indice)}
+                  style={[
+                    styles.alternativa,
+                    { backgroundColor: cores[indice] },
+                    descartada && styles.descartada,
+                  ]}
                 >
-                  <View>
-                    <Text style={styles.reiniciarTxt}>
-                      Reiniciar jogo
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+                  <Text style={[styles.letra, { color: corTexto }]}>
+                    {letras[indice]}
+                  </Text>
+                  <Text style={[styles.textoAlternativa, { color: corTexto }]}>
+                    {alternativa}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.progresso}>
+            <Text style={styles.pequeno}>
+              Pergunta {numero} de {total}
+            </Text>
+            <View
+              style={styles.trilho}
+              accessibilityRole="progressbar"
+              accessibilityValue={{ min: 0, max: total, now: partida.indice }}
+            >
+              <View
+                style={[
+                  styles.barra,
+                  { width: `${(partida.indice / total) * 100}%` },
+                ]}
+              />
             </View>
           </View>
-        </ScrollView>
-      </ImageBackground>
-    </KeyboardAvoidingView>
+
+          <Pressable
+            style={styles.botaoBranco}
+            accessibilityRole="button"
+            onPress={reiniciar}
+          >
+            <Text style={styles.negrito}>Reiniciar jogo</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  tela: {
-    flex: 1,
-    backgroundColor: "#f5f5fb",
-  },
-
-  fundo: {
-    flex: 1,
-  },
-
-  scroll: {
-    flex: 1,
-  },
-
-  scrollConteudo: {
-    flexGrow: 1,
-    alignItems: "center",
-  },
-
-  thatTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 10,
-  },
-
-  btnView: {
-    width: 36,
-  },
-
-  goBackBTN: {
+  fundo: { flex: 1, backgroundColor: "#f5f5fb" },
+  erro: { flex: 1, justifyContent: "center", padding: 20, gap: 12 },
+  rolagem: { flexGrow: 1, alignItems: "center" },
+  conteudo: { width: "100%", maxWidth: 400, gap: 10 },
+  cabecalho: { flexDirection: "row", alignItems: "center", gap: 10 },
+  voltar: {
+    width: 40,
+    height: 40,
     backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-    width: 36,
-    height: 36,
     borderRadius: 13,
-    borderWidth: 1,
-    borderColor: "#e5e2ef",
-  },
-
-  btnGoBackTxt: {
-    fontSize: 28,
-    lineHeight: 30,
-    color: "#171721",
-  },
-
-  topTxts: {
-    flex: 1,
-    minWidth: 0,
-    justifyContent: "center",
-  },
-
-  capituloTxt1: {
-    color: "#55515e",
-    fontSize: 11,
-    marginBottom: 2,
-  },
-
-  capituloTxt2: {
-    color: "#15141e",
-    fontSize: 14,
-    fontWeight: "900",
-    letterSpacing: -0.4,
-  },
-
-  ptsView: {
-    alignItems: "flex-end",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-
-  pstBackGround: {
-    backgroundColor: "#fff",
-    minWidth: 62,
-    minHeight: 32,
-    justifyContent: "center",
     alignItems: "center",
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    justifyContent: "center",
   },
-
-  pstTxt: {
+  seta: { fontSize: 28, color: "#171721" },
+  titulo: { flex: 1 },
+  pequeno: { fontSize: 12, color: "#55515e" },
+  negrito: { fontWeight: "800", color: "#171721" },
+  placar: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 8,
     color: "#191823",
-    fontSize: 12,
     fontWeight: "700",
   },
-
-  middleView: {
-    width: "100%",
-  },
-
-  countView: {
+  painel: {
     backgroundColor: "#f0eac2",
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#d9ce91",
     borderRadius: 22,
     padding: 12,
+    gap: 8,
   },
-
-  tectoyTxt: {
-    color: "#d53c09",
-    fontSize: 16,
-    fontWeight: "900",
-    letterSpacing: 2,
-    marginBottom: 9,
-  },
-
-  visor: {
-    backgroundColor: "#0d0b12",
-    minHeight: 72,
-    borderRadius: 12,
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-
-  visorTxt: {
+  marca: { color: "#d53c09", fontWeight: "900", letterSpacing: 2 },
+  visor: { backgroundColor: "#0d0b12", padding: 14, borderRadius: 12 },
+  codigo: {
     color: "#ff352c",
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    fontSize: 34,
     fontWeight: "700",
-    letterSpacing: 1,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
-
-  tentativasView: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 10,
-  },
-
-  bolinhaAtiva: {
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-    backgroundColor: "#ef610c",
-  },
-
-  bolinha: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: "#686047",
-  },
-
-  tentativaTxt: {
-    fontSize: 11,
-    color: "#57513c",
-  },
-
-  respostasView: {
-    marginTop: 10,
-    gap: 10,
-  },
-
-  linhaRespostas: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-
-  respostaBTN: {
-    width: "100%",
+  pergunta: { color: "#15141e", fontSize: 17, fontWeight: "700" },
+  aviso: { color: "#821f19", fontWeight: "700" },
+  grade: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  alternativa: {
+    width: "48%",
+    flexGrow: 1,
+    minHeight: 100,
+    padding: 12,
     borderRadius: 22,
-    justifyContent: "center",
     alignItems: "center",
-    padding: 16,
+    justifyContent: "center",
+    gap: 4,
   },
-
-  respostaA: {
-    backgroundColor: "#db292b",
-  },
-
-  respostaB: {
-    backgroundColor: "#ffd500",
-  },
-
-  respostaC: {
-    backgroundColor: "#1963c2",
-  },
-
-  respostaD: {
-    backgroundColor: "#2b8031",
-  },
-
-  respostaTxt: {
-    color: "#fff",
-    fontSize: 44,
-    fontWeight: "900",
-  },
-
-  respostaTxtEscuro: {
-    color: "#171719",
-  },
-
-  progressoView: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingHorizontal: 13,
-    paddingVertical: 11,
-    marginTop: 16,
-  },
-
-  perguntaTxt: {
-    color: "#5b566c",
-    fontSize: 11,
-    marginBottom: 5,
-  },
-
-  barraProgresso: {
+  descartada: { opacity: 0.45 },
+  letra: { fontSize: 28, fontWeight: "900" },
+  textoAlternativa: { textAlign: "center", fontWeight: "600" },
+  progresso: { backgroundColor: "#fff", padding: 12, borderRadius: 16, gap: 6 },
+  trilho: {
     height: 8,
-    borderRadius: 4,
     backgroundColor: "#e5e2ef",
+    borderRadius: 4,
     overflow: "hidden",
   },
-
-  barraPreenchida: {
-    height: "100%",
-    width: `${(1 / 30) * 100}%`,
-    borderRadius: 4,
-    backgroundColor: "#29b877",
-  },
-
-  reiniciarView: {
-    marginTop: 10,
-  },
-
-  reiniciarBTN: {
-    backgroundColor: "#fff",
+  barra: { height: "100%", backgroundColor: "#29b877", borderRadius: 4 },
+  botaoBranco: {
     minHeight: 46,
-    borderWidth: 1.5,
-    borderColor: "#d9d3e8",
+    backgroundColor: "#fff",
     borderRadius: 15,
-    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-
-  reiniciarTxt: {
-    color: "#191720",
-    fontSize: 14,
-    fontWeight: "900",
+    justifyContent: "center",
+    padding: 12,
   },
 });

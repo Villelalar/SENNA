@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Fredoka_700Bold, useFonts } from "@expo-google-fonts/fredoka";
+import { useFonts, Fredoka_700Bold } from "@expo-google-fonts/fredoka";
 import {
   ImageBackground,
   Pressable,
@@ -12,34 +11,37 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const resultadosPadrao = [
-  { selo: "1ª", texto: "Acertos na 1ª tentativa", total: 20, cor: "#18864A" },
-  { selo: "2ª", texto: "Acertos na 2ª tentativa", total: 6, cor: "#1561B9" },
-  { selo: "3ª", texto: "Acertos na 3ª tentativa", total: 3, cor: "#875700" },
-  { selo: "0", texto: "Sem acerto", total: 1, cor: "#D52627" },
+const categorias = [
+  { selo: "1ª", texto: "Acertos na 1ª tentativa", cor: "#18864a" },
+  { selo: "2ª", texto: "Acertos na 2ª tentativa", cor: "#1561b9" },
+  { selo: "3ª", texto: "Acertos na 3ª tentativa", cor: "#875700" },
+  { selo: "0", texto: "Sem acerto", cor: "#d52627" },
 ];
 
 export default function FimProgramaScreen({
-  programa = "021",
-  pontos = 75,
+  programa = "011",
+  pontos = 0,
   pontosMaximos = 90,
-  resultados = resultadosPadrao,
+  totais = [0, 0, 0, 0],
+  onVoltar,
   onJogarDeNovo,
-} = {}) {
+}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [fontsLoaded] = useFonts({ Fredoka_700Bold });
-  const fonteDestaque = fontsLoaded ? styles.fredoka : styles.negrito;
+  const [fonteCarregada] = useFonts({ Fredoka_700Bold });
+  const fonte = fonteCarregada ? styles.fredoka : styles.negrito;
 
-  function voltarAoInicio() {
-    router.replace("/");
+  function irAoInicio() {
+    router.replace("/home");
   }
 
   function voltar() {
-    if (router.canGoBack()) {
+    if (onVoltar) {
+      onVoltar();
+    } else if (router.canGoBack()) {
       router.back();
     } else {
-      voltarAoInicio();
+      irAoInicio();
     }
   }
 
@@ -47,266 +49,137 @@ export default function FimProgramaScreen({
     if (onJogarDeNovo) {
       onJogarDeNovo();
     } else {
-      voltar();
+      router.replace({ pathname: "/jogocap", params: { programa } });
     }
   }
 
   return (
-    <View style={styles.tela}>
-      <StatusBar style="dark" />
-
-      <ImageBackground
-        source={require("../../../assets/nuvens.png")}
-        resizeMode="cover"
-        style={styles.fundo}
+    <ImageBackground
+      source={require("../../../assets/nuvens.png")}
+      style={styles.fundo}
+      resizeMode="cover"
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.rolagem,
+          {
+            paddingTop: insets.top + 20,
+            paddingBottom: insets.bottom + 20,
+            paddingLeft: insets.left + 16,
+            paddingRight: insets.right + 16,
+          },
+        ]}
       >
-        <ScrollView
-          style={styles.rolagem}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.areaSegura,
-            {
-              paddingTop: insets.top + 20,
-              paddingBottom: insets.bottom + 20,
-              paddingLeft: insets.left + 16,
-              paddingRight: insets.right + 16,
-            },
-          ]}
-        >
-          <View style={styles.conteudo}>
-            <View style={styles.cabecalho}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Voltar"
-                onPress={voltar}
-                hitSlop={4}
-                style={({ pressed }) => [
-                  styles.botaoVoltar,
-                  pressed && styles.pressionado,
-                ]}
-              >
-                <Ionicons name="chevron-back" size={17} color="#111421" />
-              </Pressable>
-
-              <Text
-                accessibilityRole="header"
-                style={[styles.titulo, fonteDestaque]}
-              >
-                Fim do programa
-              </Text>
-            </View>
-
-            <View style={styles.cartaoPontuacao}>
-              <Text style={styles.programa}>Programa {programa} concluído</Text>
-              <Text style={[styles.pontuacao, fonteDestaque]}>{pontos}</Text>
-              <Text style={styles.pontosMaximos}>de {pontosMaximos} pontos</Text>
-            </View>
-
-            <View style={styles.lista}>
-              {resultados.map(({ selo, texto, total, cor }) => (
-                <View key={selo} style={styles.linha}>
-                  <View
-                    accessible={false}
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants"
-                    style={[styles.selo, { backgroundColor: cor }]}
-                  >
-                    <Text style={[styles.seloTexto, fonteDestaque]}>
-                      {selo}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.rotulo}>{texto}</Text>
-                  <Text style={styles.total}>{total}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.rodape}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={jogarDeNovo}
-                style={({ pressed }) => [
-                  styles.botao,
-                  styles.botaoJogar,
-                  pressed && styles.pressionado,
-                ]}
-              >
-                <Text style={[styles.textoJogar, fonteDestaque]}>
-                  Jogar de novo
-                </Text>
-              </Pressable>
-
-              <Pressable
-                accessibilityRole="button"
-                onPress={voltarAoInicio}
-                style={({ pressed }) => [
-                  styles.botao,
-                  styles.botaoInicio,
-                  pressed && styles.pressionado,
-                ]}
-              >
-                <Text style={[styles.textoInicio, fonteDestaque]}>
-                  Voltar ao início
-                </Text>
-              </Pressable>
-            </View>
+        <View style={styles.conteudo}>
+          <View style={styles.cabecalho}>
+            <Pressable
+              style={styles.voltar}
+              onPress={voltar}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar"
+            >
+              <Ionicons name="chevron-back" size={18} color="#111421" />
+            </Pressable>
+            <Text accessibilityRole="header" style={[styles.titulo, fonte]}>
+              Fim do programa
+            </Text>
           </View>
-        </ScrollView>
-      </ImageBackground>
-    </View>
+
+          <View style={styles.placar}>
+            <Text>Programa {programa} concluído</Text>
+            <Text style={[styles.pontos, fonte]}>{pontos}</Text>
+            <Text>de {pontosMaximos} pontos</Text>
+          </View>
+
+          {categorias.map((categoria, indice) => (
+            <View key={categoria.selo} style={styles.linha}>
+              <View style={[styles.selo, { backgroundColor: categoria.cor }]}>
+                <Text style={[styles.textoSelo, fonte]}>{categoria.selo}</Text>
+              </View>
+              <Text style={styles.rotulo}>{categoria.texto}</Text>
+              <Text style={styles.negrito}>{totais[indice]}</Text>
+            </View>
+          ))}
+
+          <View style={styles.rodape}>
+            <Pressable
+              style={[styles.botao, styles.botaoJogar]}
+              onPress={jogarDeNovo}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.textoJogar, fonte]}>Jogar de novo</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.botao, styles.botaoInicio]}
+              onPress={irAoInicio}
+              accessibilityRole="button"
+            >
+              <Text style={fonte}>Voltar ao início</Text>
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  tela: {
-    flex: 1,
-    backgroundColor: "#F5F5FB",
-  },
-  fundo: {
-    flex: 1,
-    width: "100%",
-    maxWidth: 480,
-    alignSelf: "center",
-  },
-  rolagem: {
-    flex: 1,
-  },
-  areaSegura: {
-    flexGrow: 1,
+  fundo: { flex: 1, backgroundColor: "#f5f5fb" },
+  rolagem: { flexGrow: 1, alignItems: "center" },
+  conteudo: { flexGrow: 1, width: "100%", maxWidth: 420, gap: 10 },
+  cabecalho: { flexDirection: "row", alignItems: "center", gap: 10 },
+  voltar: {
+    width: 40,
+    height: 40,
     alignItems: "center",
-  },
-  conteudo: {
-    flexGrow: 1,
-    width: "100%",
-    maxWidth: 420,
-  },
-  fredoka: {
-    fontFamily: "Fredoka_700Bold",
-  },
-  negrito: {
-    fontWeight: "700",
-  },
-  cabecalho: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 10,
-  },
-  botaoVoltar: {
-    width: 37,
-    height: 37,
+    justifyContent: "center",
+    backgroundColor: "#fff",
     borderRadius: 13,
-    borderWidth: 1,
-    borderColor: "#E4E4EE",
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
   },
-  titulo: {
-    flex: 1,
-    color: "#111421",
-    fontSize: 24,
-  },
-  cartaoPontuacao: {
-    minHeight: 132,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+  titulo: { flex: 1, color: "#111421", fontSize: 24 },
+  fredoka: { fontFamily: "Fredoka_700Bold" },
+  negrito: { fontWeight: "700" },
+  placar: {
     alignItems: "center",
-    justifyContent: "center",
+    padding: 16,
     borderRadius: 17,
     borderWidth: 1,
-    borderColor: "#F2D581",
-    backgroundColor: "#FFF5D9",
+    borderColor: "#f2d581",
+    backgroundColor: "#fff5d9",
   },
-  programa: {
-    color: "#45495C",
-    fontSize: 11,
-    textAlign: "center",
-  },
-  pontuacao: {
-    color: "#111421",
-    fontSize: 48,
-    textAlign: "center",
-  },
-  pontosMaximos: {
-    color: "#111421",
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  lista: {
-    marginTop: 10,
-    gap: 10,
-  },
+  pontos: { fontSize: 48, color: "#111421" },
   linha: {
     minHeight: 62,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
+    padding: 12,
     gap: 11,
-    backgroundColor: "#FCFDFD",
-    borderWidth: 1,
-    borderColor: "#E4E5EF",
+    backgroundColor: "#fff",
     borderRadius: 17,
   },
   selo: {
     width: 39,
-    minHeight: 39,
+    height: 39,
     borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
   },
-  seloTexto: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  rotulo: {
-    flex: 1,
-    color: "#111421",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  total: {
-    color: "#111421",
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "right",
-  },
-  rodape: {
-    marginTop: "auto",
-    paddingTop: 24,
-    gap: 10,
-  },
+  textoSelo: { color: "#fff" },
+  rotulo: { flex: 1, color: "#111421", fontWeight: "600" },
+  rodape: { marginTop: "auto", paddingTop: 14, gap: 10 },
   botao: {
-    minHeight: 45,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    minHeight: 46,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 15,
+    padding: 12,
   },
-  botaoJogar: {
-    backgroundColor: "#D62929",
-  },
+  botaoJogar: { backgroundColor: "#d62929" },
   botaoInicio: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
-    borderColor: "#D4CFE5",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#d4cfe5",
   },
-  textoJogar: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  textoInicio: {
-    color: "#111421",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  pressionado: {
-    opacity: 0.8,
-  },
+  textoJogar: { color: "#fff" },
 });

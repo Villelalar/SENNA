@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
@@ -18,6 +19,7 @@ const opcoes = [
   {
     titulo: "Jogos",
     descricao: "12 disponíveis",
+    rota: "/games",
     icone: "game-controller",
     cor: "#e64e42",
     fundo: "#fff2f0",
@@ -26,6 +28,7 @@ const opcoes = [
   {
     titulo: "Livros",
     descricao: "Cap. 1 - Senna",
+    rota: "/book",
     icone: "book",
     cor: "#e4c300",
     fundo: "#fffbed",
@@ -50,26 +53,28 @@ const opcoes = [
 ];
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const { nome } = useLocalSearchParams();
+  const nomeRecebido = Array.isArray(nome) ? nome[0] : nome;
+  const inicial = nomeRecebido?.trim().charAt(0).toUpperCase() || "L";
   const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [alturaVisivel, setAlturaVisivel] = useState(0);
+  const [alturaConteudo, setAlturaConteudo] = useState(0);
 
-  const telaEstreita = width < 360;
-  const telaBaixa = height < 700;
+  const podeRolar = alturaVisivel > 0 && alturaConteudo > alturaVisivel;
 
-  const margem = telaEstreita ? 12 : 20;
-
-  const larguraConteudo = Math.max(
-    0,
-    Math.min(width - margem * 2 - insets.left - insets.right, 480),
-  );
-
-  const colunas = larguraConteudo < 290 || fontScale > 1.3 ? 1 : 2;
-
-  const espaco = 12;
+  const larguraUtil = width - insets.left - insets.right;
+  const alturaUtil = height - insets.top - insets.bottom;
+  const telaEstreita = larguraUtil < 360;
+  const telaCompacta = telaEstreita || alturaUtil < 680;
+  const margem = telaEstreita ? 12 : 16;
+  const larguraConteudo = Math.max(0, Math.min(larguraUtil - margem * 2, 480));
+  const colunas = larguraConteudo < 260 || fontScale > 1.3 ? 1 : 2;
+  const espaco = telaCompacta ? 8 : 10;
   const larguraCard = (larguraConteudo - espaco * (colunas - 1)) / colunas;
-
-  const tamanhoTitulo = telaEstreita ? 26 : 30;
+  const tamanhoTitulo = telaCompacta ? 26 : 30;
 
   function opcaoIndisponivel() {
     if (Platform.OS === "web") {
@@ -79,8 +84,14 @@ export default function HomeScreen() {
     }
   }
 
-  function selecionarOpcao() {
+  function selecionarOpcao(opcao) {
     setMenuAberto(false);
+
+    if (opcao.rota) {
+      router.push(opcao.rota);
+      return;
+    }
+
     opcaoIndisponivel();
   }
 
@@ -98,12 +109,19 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.areaRolagem,
             {
-              paddingTop: insets.top + (telaBaixa ? 16 : 28),
-              paddingBottom: insets.bottom + 28,
+              paddingTop: insets.top + (telaCompacta ? 8 : 16),
+              paddingBottom: insets.bottom + (telaCompacta ? 8 : 12),
               paddingLeft: margem + insets.left,
               paddingRight: margem + insets.right,
             },
           ]}
+          onLayout={({ nativeEvent }) => {
+            setAlturaVisivel(nativeEvent.layout.height);
+          }}
+          onContentSizeChange={(_, altura) => setAlturaConteudo(altura)}
+          scrollEnabled={podeRolar}
+          bounces={false}
+          overScrollMode="never"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -116,7 +134,6 @@ export default function HomeScreen() {
                   <View style={[styles.quadrado, styles.verde]} />
                   <View style={[styles.quadrado, styles.azul]} />
                 </View>
-
                 <Text style={styles.nomeMarca}>Tectoy</Text>
               </View>
 
@@ -127,7 +144,7 @@ export default function HomeScreen() {
                   accessibilityLabel="Abrir perfil"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.nomePerfil}>L</Text>
+                  <Text style={styles.nomePerfil}>{inicial}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -152,11 +169,10 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     key={opcao.titulo}
                     style={styles.botaoMenu}
-                    onPress={selecionarOpcao}
+                    onPress={() => selecionarOpcao(opcao)}
                     accessibilityRole="button"
                   >
                     <Ionicons name={opcao.icone} size={20} color={opcao.cor} />
-
                     <Text style={styles.itemMenu}>{opcao.titulo}</Text>
                   </TouchableOpacity>
                 ))}
@@ -164,7 +180,10 @@ export default function HomeScreen() {
             )}
 
             <View
-              style={[styles.apresentacao, { marginTop: telaBaixa ? 24 : 36 }]}
+              style={[
+                styles.apresentacao,
+                { marginTop: telaCompacta ? 12 : 20 },
+              ]}
             >
               <Text style={styles.saudacao}>Boa tarde</Text>
 
@@ -186,14 +205,16 @@ export default function HomeScreen() {
                 <View style={styles.circuloFogo}>
                   <Ionicons name="flame" size={14} color="#fff" />
                 </View>
-
                 <Text style={styles.dias}>6 dias</Text>
                 <Text style={styles.seguidos}>seguidos</Text>
               </View>
             </View>
 
             <TouchableOpacity
-              style={styles.continuar}
+              style={[
+                styles.continuar,
+                telaCompacta && styles.continuarCompacto,
+              ]}
               onPress={opcaoIndisponivel}
               activeOpacity={0.8}
               accessibilityRole="button"
@@ -206,11 +227,9 @@ export default function HomeScreen() {
                 <View style={styles.etiqueta}>
                   <Text style={styles.txtContinuar}>Continuar</Text>
                 </View>
-
                 <Text style={styles.capitulo}>
                   Capítulo 1 - Início Ayrton Senna
                 </Text>
-
                 <Text style={styles.questoes}>
                   Faltam 12 questões para fechar
                 </Text>
@@ -223,24 +242,28 @@ export default function HomeScreen() {
                   key={opcao.titulo}
                   style={[
                     styles.card,
+                    telaCompacta && styles.cardCompacto,
                     {
                       width: larguraCard,
                       backgroundColor: opcao.fundo,
                       borderColor: opcao.borda,
                     },
                   ]}
-                  onPress={opcaoIndisponivel}
+                  onPress={() => selecionarOpcao(opcao)}
                   activeOpacity={0.8}
                   accessibilityRole="button"
                 >
                   <View
-                    style={[styles.iconeOpcao, { backgroundColor: opcao.cor }]}
+                    style={[
+                      styles.iconeOpcao,
+                      telaCompacta && styles.iconeOpcaoCompacto,
+                      { backgroundColor: opcao.cor },
+                    ]}
                   >
                     <Ionicons name={opcao.icone} size={22} color="#fff" />
                   </View>
 
                   <Text style={styles.txtOpcao}>{opcao.titulo}</Text>
-
                   <Text style={styles.descricao}>{opcao.descricao}</Text>
                 </TouchableOpacity>
               ))}
@@ -262,9 +285,9 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+    minHeight: 0,
   },
   areaRolagem: {
-    flexGrow: 1,
     alignItems: "center",
   },
   conteudo: {
@@ -389,7 +412,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    marginTop: 14,
+    marginTop: 8,
     backgroundColor: "#fff",
   },
   circuloFogo: {
@@ -411,16 +434,19 @@ const styles = StyleSheet.create({
   },
   continuar: {
     width: "100%",
-    minHeight: 90,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     padding: 12,
-    marginTop: 24,
+    marginTop: 16,
     backgroundColor: "rgba(255,255,255,0.94)",
     borderWidth: 1,
     borderColor: "#dd8e87",
     borderRadius: 12,
+  },
+  continuarCompacto: {
+    marginTop: 12,
+    padding: 10,
   },
   iconePlay: {
     width: 44,
@@ -460,14 +486,18 @@ const styles = StyleSheet.create({
   grade: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginTop: 12,
+    marginTop: 10,
   },
   card: {
-    minHeight: 130,
-    padding: 14,
+    minHeight: 110,
+    padding: 12,
     justifyContent: "center",
     borderWidth: 1,
     borderRadius: 12,
+  },
+  cardCompacto: {
+    minHeight: 92,
+    padding: 10,
   },
   iconeOpcao: {
     width: 40,
@@ -475,7 +505,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 6,
+  },
+  iconeOpcaoCompacto: {
+    width: 34,
+    height: 34,
+    marginBottom: 4,
   },
   txtOpcao: {
     fontSize: 16,

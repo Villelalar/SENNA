@@ -1,230 +1,152 @@
-import { StatusBar } from "expo-status-bar";
+import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useFonts, Fredoka_700Bold } from "@expo-google-fonts/fredoka";
 import {
   Image,
   ImageBackground,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFonts, Fredoka_700Bold } from "@expo-google-fonts/fredoka";
 
-export default function JogoCapScreen() {
-  const { width, height } = useWindowDimensions();
+export default function AcertoScreen({
+  programa = "011",
+  numero = 1,
+  total = 30,
+  pontos = 0,
+  resultado = { acertou: false, tentativa: 3, pontosGanhos: 0 },
+  onProxima,
+}) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [fontsLoaded] = useFonts({ Fredoka_700Bold });
+  const [fonteCarregada] = useFonts({ Fredoka_700Bold });
+  const fonte = fonteCarregada ? styles.fredoka : styles.negrito;
+  const { acertou, tentativa, pontosGanhos } = resultado;
 
-  const larguraFundo = Math.min(width, 440);
-  const larguraUtil = larguraFundo - insets.left - insets.right;
-  const alturaUtil = height - insets.top - insets.bottom;
-  const telaEstreita = larguraUtil < 360;
-  const telaBaixa = alturaUtil < 660;
-
-  const margem = telaEstreita ? 12 : 20;
-  const larguraConteudo = Math.max(
-    0,
-    Math.min(larguraUtil - margem * 2, 350),
-  );
-
-  const tamanhoImagem = Math.min(
-    larguraConteudo * 0.52,
-    telaBaixa ? 132 : 180,
-  );
-  const tamanhoEstrela = telaEstreita || telaBaixa ? 32 : 40;
-  const fonteDestaque = fontsLoaded ? styles.fonteFredoka : styles.fontePadrao;
+  function continuar() {
+    if (onProxima) {
+      onProxima();
+    } else {
+      router.replace({ pathname: "/jogocap", params: { programa } });
+    }
+  }
 
   return (
-    <View style={styles.tela}>
-      <StatusBar style="dark" />
-
-      <ImageBackground
-        source={require("../../../assets/nuvens.png")}
-        style={styles.fundo}
-        resizeMode="cover"
+    <ImageBackground
+      source={require("../../../assets/nuvens.png")}
+      style={styles.fundo}
+      resizeMode="cover"
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.rolagem,
+          {
+            paddingTop: insets.top + 20,
+            paddingBottom: insets.bottom + 20,
+            paddingLeft: insets.left + 16,
+            paddingRight: insets.right + 16,
+          },
+        ]}
       >
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollConteudo,
-            {
-              paddingTop: insets.top + (telaBaixa ? 12 : 24),
-              paddingBottom: insets.bottom + (telaBaixa ? 16 : 24),
-              paddingLeft: insets.left + margem,
-              paddingRight: insets.right + margem,
-            },
-          ]}
-        >
-          <View style={[styles.conteudo, { width: larguraConteudo }]}>
-            <Text style={styles.programaTxt}>
-              Programa 021 · Pergunta 1 de 30
-            </Text>
+        <View style={styles.conteudo}>
+          <Text style={styles.info}>
+            Programa {programa} · Pergunta {numero} de {total}
+          </Text>
 
-            <View
-              style={[
-                styles.resultado,
-                { paddingVertical: telaBaixa ? 16 : 28 },
-              ]}
-            >
+          <View style={styles.resultado}>
+            {acertou && (
               <Image
                 source={require("../../../assets/acerto.png")}
-                style={{ width: tamanhoImagem, height: tamanhoImagem }}
+                style={styles.imagem}
                 resizeMode="contain"
               />
+            )}
 
-              <View style={styles.acertouTxtView}>
-                <Text
-                  style={[
-                    styles.acertouTxt,
-                    fonteDestaque,
-                    { fontSize: telaEstreita || telaBaixa ? 34 : 40 },
-                  ]}
-                >
-                  Acertou!
-                </Text>
-                <Text style={styles.acertouTxt2}>Na 1ª tentativa</Text>
-              </View>
+            <Text accessibilityRole="header" style={[styles.titulo, fonte]}>
+              {acertou ? "Acertou!" : "Tentativas esgotadas"}
+            </Text>
 
-              <View style={styles.starView}>
-                <Ionicons name="star" size={tamanhoEstrela} color="rgb(244, 179, 1)" />
-                <Ionicons name="star" size={tamanhoEstrela} color="rgb(244, 179, 1)" />
-                <Ionicons name="star" size={tamanhoEstrela} color="rgb(244, 179, 1)" />
-              </View>
+            <Text style={styles.info}>
+              {acertou
+                ? `Na ${tentativa}ª tentativa`
+                : "Esta pergunta valeu 0 pontos"}
+            </Text>
 
-              <TouchableOpacity style={styles.pontosBtn}>
-                <Text
-                  style={[
-                    styles.pontosBtnTxt,
-                    fonteDestaque,
-                    { fontSize: telaEstreita || telaBaixa ? 24 : 30 },
-                  ]}
-                >
-                  +3 pontos
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.estrelas}>
+              {[1, 2, 3].map((estrela) => (
+                <Ionicons
+                  key={estrela}
+                  name={estrela <= pontosGanhos ? "star" : "star-outline"}
+                  size={34}
+                  color={estrela <= pontosGanhos ? "#f4b301" : "#746e7e"}
+                />
+              ))}
             </View>
 
-            <View style={styles.doubleBtnsView}>
-              <TouchableOpacity style={styles.doublebtn1}>
-                <Text style={styles.totalTxt}>Total até agora</Text>
-                <Text style={[styles.ptsTxt, fonteDestaque]}>3 pts</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.doublebtn2}>
-                <Text style={[styles.proxPerguntaTxt, fonteDestaque]}>
-                  Próxima pergunta
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.selo}>
+              <Text style={[styles.pontosGanhos, fonte]}>
+                +{pontosGanhos} {pontosGanhos === 1 ? "ponto" : "pontos"}
+              </Text>
             </View>
           </View>
-        </ScrollView>
-      </ImageBackground>
-    </View>
+
+          <View style={styles.placar}>
+            <Text>Total até agora</Text>
+            <Text style={[styles.total, fonte]}>{pontos} pts</Text>
+          </View>
+
+          <Pressable
+            style={styles.botao}
+            onPress={continuar}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.textoBotao, fonte]}>
+              {numero === total ? "Ver resultado" : "Próxima pergunta"}
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  tela: {
-    flex: 1,
-    backgroundColor: "#f5f5fb",
-  },
-  fundo: {
-    flex: 1,
-    width: "100%",
-    alignSelf: "center",
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollConteudo: {
-    flexGrow: 1,
-    alignItems: "center",
-  },
-  conteudo: {
-    flexGrow: 1,
-  },
-  programaTxt: {
-    color: "rgb(64, 63, 82)",
-    textAlign: "center",
-  },
+  fundo: { flex: 1, backgroundColor: "#f5f5fb" },
+  rolagem: { flexGrow: 1, alignItems: "center" },
+  conteudo: { flexGrow: 1, width: "100%", maxWidth: 350, gap: 10 },
+  info: { color: "#4b4d61", textAlign: "center" },
   resultado: {
     flexGrow: 1,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
     gap: 10,
   },
-  acertouTxtView: {
-    alignItems: "center",
-  },
-  acertouTxt: {
-    color: "rgb(20, 20, 30)",
-    textAlign: "center",
-  },
-  fonteFredoka: {
-    fontFamily: "Fredoka_700Bold",
-  },
-  fontePadrao: {
-    fontWeight: "bold",
-  },
-  acertouTxt2: {
-    color: "rgb(75, 77, 97)",
-    fontSize: 16,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  starView: {
+  imagem: { width: 140, height: 140 },
+  titulo: { fontSize: 34, color: "#14141e", textAlign: "center" },
+  fredoka: { fontFamily: "Fredoka_700Bold" },
+  negrito: { fontWeight: "bold" },
+  estrelas: { flexDirection: "row", gap: 8 },
+  selo: { backgroundColor: "#14141e", borderRadius: 24, padding: 10 },
+  pontosGanhos: { color: "#ffd401", fontSize: 23, paddingHorizontal: 10 },
+  placar: {
     flexDirection: "row",
-    gap: 8,
-  },
-  pontosBtn: {
-    maxWidth: "100%",
-    minHeight: 48,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgb(20, 20, 30)",
-    borderRadius: 50,
-  },
-  pontosBtnTxt: {
-    color: "rgb(255, 212, 1)",
-    textAlign: "center",
-  },
-  doubleBtnsView: {
-    gap: 10,
-  },
-  doublebtn1: {
-    minHeight: 48,
-    flexDirection: "row",
-    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 8,
     backgroundColor: "#fff",
     padding: 13,
     borderRadius: 15,
   },
-  totalTxt: {
-    color: "rgb(96, 95, 111)",
-    flexShrink: 1,
-  },
-  ptsTxt: {
-    color: "rgb(20, 20, 30)",
-    fontSize: 23,
-  },
-  doublebtn2: {
+  total: { color: "#14141e", fontSize: 23 },
+  botao: {
     minHeight: 48,
-    justifyContent: "center",
-    backgroundColor: "rgb(32, 138, 76)",
     padding: 13,
+    justifyContent: "center",
+    backgroundColor: "#208a4c",
     borderRadius: 15,
   },
-  proxPerguntaTxt: {
-    color: "#fff",
-    fontSize: 15,
-    textAlign: "center",
-  },
+  textoBotao: { color: "#fff", fontSize: 16, textAlign: "center" },
 });
