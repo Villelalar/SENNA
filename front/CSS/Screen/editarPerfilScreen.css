@@ -1,0 +1,120 @@
+.editar-perfil {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow-y: auto;
+  color: #15141e;
+  background-color: #f5f5fb;
+  background-image:
+    radial-gradient(circle at 100% 0%, #ffe2a8 0%, transparent 45%),
+    radial-gradient(circle at 0% 35%, #a9c9ff 0%, transparent 45%),
+    radial-gradient(circle at 100% 100%, #9fe6c2 0%, transparent 55%);
+}
+
+.editar-perfil *,
+.editar-perfil *::before,
+.editar-perfil *::after {
+  box-sizing: inherit;
+}
+
+.editar-perfil__conteudo {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: max(24px, env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 24px)
+    calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.editar-perfil__cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.editar-perfil__cabecalho h1 {
+  margin: 0;
+  font-size: clamp(24px, 6vw, 32px);
+  line-height: 1.15;
+}
+
+.editar-perfil__fredoka {
+  font-family: "Fredoka_700Bold", system-ui, sans-serif;
+}
+
+.editar-perfil__cabecalho button {
+  display: grid;
+  flex: 0 0 48px;
+  height: 48px;
+  place-items: center;
+  padding: 0;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #e4e4ee;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.editar-perfil__formulario {
+  display: grid;
+  gap: 16px;
+  padding: clamp(16px, 4vw, 24px);
+  background: #fff;
+  border: 1px solid #e4e4ee;
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(30, 30, 60, 0.06);
+}
+
+.editar-perfil__formulario label {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.editar-perfil__formulario input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid #cbc8da;
+  border-radius: 12px;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.editar-perfil__erro {
+  margin: 0;
+  color: #a22125;
+}
+
+.editar-perfil__acoes {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.editar-perfil__acoes button {
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid #cbc8da;
+  border-radius: 14px;
+  color: inherit;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.editar-perfil__acoes button[type="submit"] {
+  border-color: #15141e;
+  color: #fff;
+  background: #15141e;
+}
+
+.editar-perfil :focus-visible {
+  outline: 3px solid #1561b9;
+  outline-offset: 2px;
+}

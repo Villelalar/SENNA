@@ -3,24 +3,39 @@ import "../../../CSS/Screen/perfilScreen.css";
 import { Fredoka_700Bold, useFonts } from "@expo-google-fonts/fredoka";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ChevronRight from "@mui/icons-material/ChevronRight";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 
 import BarraNavegacao from "../../components/BarraNavegacao";
 import {
+  estatisticasIniciais,
   obterEstatisticas,
   perfilPadrao,
   zerarProgresso,
 } from "../../data/estatisticas";
+import { lerPerfilLocal } from "../../data/perfilLocal";
 
 export default function PerfilScreen() {
   const router = useRouter();
   const { nome } = useLocalSearchParams();
   const nomeRecebido = Array.isArray(nome) ? nome[0] : nome;
-  const nomeExibido = nomeRecebido?.trim() || "Jogador";
-  const inicial = nomeExibido.charAt(0).toUpperCase();
+  const params = nomeRecebido ? { nome: nomeRecebido } : undefined;
+
   const [fonteCarregada] = useFonts({ Fredoka_700Bold });
-  const [estatisticas, setEstatisticas] = useState(obterEstatisticas);
+  const [estatisticas, setEstatisticas] = useState(estatisticasIniciais);
+  const [perfil, setPerfil] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      setPerfil(lerPerfilLocal(nomeRecebido));
+      setEstatisticas(obterEstatisticas());
+    }, [nomeRecebido]),
+  );
+
+  const nomeExibido = perfil?.nome ?? (nomeRecebido?.trim() || "Jogador");
+  const inicial = nomeExibido.charAt(0).toUpperCase();
+  const curso = perfil?.curso ?? perfilPadrao.curso;
+  const instituicao = perfil?.instituicao ?? perfilPadrao.instituicao;
 
   const porcentagem =
     estatisticas.totalPerguntasLivro > 0
@@ -43,7 +58,10 @@ export default function PerfilScreen() {
   }
 
   function editarPerfil() {
-    window.alert("Esta opção está indisponível.");
+    router.push({
+      pathname: "/editar-perfil",
+      params,
+    });
   }
 
   function zerar() {
@@ -92,7 +110,7 @@ export default function PerfilScreen() {
           </div>
           <h2>{nomeExibido}</h2>
           <p>
-            {perfilPadrao.curso} · {perfilPadrao.instituicao}
+            {curso} · {instituicao}
           </p>
         </section>
 
@@ -131,7 +149,11 @@ export default function PerfilScreen() {
         <ul className="lista_opcoes">
           {opcoes.map((opcao) => (
             <li key={opcao.rotulo}>
-              <button type="button" className="opcao_perfil" onClick={opcao.acao}>
+              <button
+                type="button"
+                className="opcao_perfil"
+                onClick={opcao.acao}
+              >
                 <span>{opcao.rotulo}</span>
                 <ChevronRight aria-hidden="true" />
               </button>
@@ -140,10 +162,7 @@ export default function PerfilScreen() {
         </ul>
       </main>
 
-      <BarraNavegacao
-        ativo="Perfil"
-        params={nomeRecebido ? { nome: nomeRecebido } : undefined}
-      />
+      <BarraNavegacao ativo="Perfil" params={params} />
     </div>
   );
 }

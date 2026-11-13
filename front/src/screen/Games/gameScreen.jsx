@@ -1,6 +1,3 @@
-import "../../../CSS/Screen/gamesScreen.css";
-
-import { usePathname, useRouter } from "expo-router";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import Home from "@mui/icons-material/Home";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
@@ -10,8 +7,9 @@ import Person from "@mui/icons-material/Person";
 import PersonOutlined from "@mui/icons-material/PersonOutlined";
 import SportsEsports from "@mui/icons-material/SportsEsports";
 import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 
-import { programas, programaDisponivel } from "../../data/partida";
+import { programaDisponivel, programas } from "../../data/partida";
 
 const cores = ["#d92525", "#946600", "#1565c0", "#2e7d32"];
 
@@ -24,29 +22,29 @@ const navegacao = [
     ativo: SportsEsports,
   },
   { rotulo: "Livros", rota: "/book", icone: MenuBookOutlined, ativo: MenuBook },
-  { rotulo: "Perfil", rota: null, icone: PersonOutlined, ativo: Person },
+  { rotulo: "Perfil", rota: "/perfil", icone: PersonOutlined, ativo: Person },
 ];
 
 export default function GameScreen() {
   const router = useRouter();
   const pathname = usePathname();
+  const { nome } = useLocalSearchParams();
+  const nomeRecebido = Array.isArray(nome) ? nome[0] : nome;
+  const params = nomeRecebido ? { nome: nomeRecebido } : undefined;
   const total = programas.filter(programaDisponivel).length;
 
   function voltar() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace("/home");
+      router.replace({ pathname: "/home", params });
     }
   }
 
   function navegar(rota) {
-    if (!rota) {
-      window.alert("Esta opção está indisponível.");
-      return;
-    }
+    if (pathname === rota) return;
 
-    if (pathname !== rota) router.replace(rota);
+    router.replace({ pathname: rota, params });
   }
 
   return (
@@ -87,6 +85,7 @@ export default function GameScreen() {
                 <div className="card_games_content">
                   <h2>{programa.titulo}</h2>
                   <p>{disponivel ? "30 perguntas" : "Gabarito incompleto"}</p>
+
                   <button
                     type="button"
                     disabled={!disponivel}

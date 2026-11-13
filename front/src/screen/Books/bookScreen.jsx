@@ -1,6 +1,5 @@
 import "../../../CSS/Screen/booksScreen.css";
 
-import { usePathname, useRouter } from "expo-router";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import Home from "@mui/icons-material/Home";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
@@ -10,10 +9,11 @@ import Person from "@mui/icons-material/Person";
 import PersonOutlined from "@mui/icons-material/PersonOutlined";
 import SportsEsports from "@mui/icons-material/SportsEsports";
 import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 
 import CardLivroEscolhido from "../../components/CardLivroEscolhido";
 import CardPrograma from "../../components/CardPrograma";
-import { programas, programaDisponivel } from "../../data/partida";
+import { programaDisponivel, programas } from "../../data/partida";
 
 const cores = ["#d62929", "#875700", "#1561b9", "#18864a"];
 
@@ -32,18 +32,21 @@ const navegacao = [
     ativo: SportsEsports,
   },
   { rotulo: "Livros", rota: "/book", icone: MenuBookOutlined, ativo: MenuBook },
-  { rotulo: "Perfil", rota: null, icone: PersonOutlined, ativo: Person },
+  { rotulo: "Perfil", rota: "/perfil", icone: PersonOutlined, ativo: Person },
 ];
 
 export default function BookScreen() {
   const router = useRouter();
   const pathname = usePathname();
+  const { nome } = useLocalSearchParams();
+  const nomeRecebido = Array.isArray(nome) ? nome[0] : nome;
+  const params = nomeRecebido ? { nome: nomeRecebido } : undefined;
 
   function voltar() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace("/home");
+      router.replace({ pathname: "/home", params });
     }
   }
 
@@ -60,12 +63,9 @@ export default function BookScreen() {
   }
 
   function navegar(rota) {
-    if (!rota) {
-      window.alert("Esta opção está indisponível.");
-      return;
-    }
+    if (pathname === rota) return;
 
-    if (pathname !== rota) router.replace(rota);
+    router.replace({ pathname: rota, params });
   }
 
   return (
@@ -94,6 +94,7 @@ export default function BookScreen() {
 
       <main className="programas">
         <h2 className="programas_titulo">Programas do livro</h2>
+
         <ul className="programas_lista">
           {programasDoLivro.map((programa, indice) => (
             <li key={programa.id}>
