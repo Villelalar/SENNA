@@ -8,6 +8,7 @@ import PersonOutlined from "@mui/icons-material/PersonOutlined";
 import SportsEsports from "@mui/icons-material/SportsEsports";
 import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
 import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
+import "../../../CSS/Screen/gamesScreen.css";
 
 import { programaDisponivel, programas } from "../../data/partida";
 
