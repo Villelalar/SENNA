@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ImageBackground,
   Platform,
@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { salvarResultadoPartida } from "../../data/estatisticas";
 import {
   criarPerguntas,
   novaPartida,
@@ -56,6 +57,28 @@ function Partida({ programa }) {
   const insets = useSafeAreaInsets();
   const [perguntas, setPerguntas] = useState(() => criarPerguntas(programa));
   const [partida, setPartida] = useState(novaPartida);
+  const partidaSalva = useRef(null);
+
+  const total = perguntas.length;
+  const numero = partida.indice + 1;
+
+  useEffect(() => {
+    if (
+      total === 0 ||
+      partida.indice !== total ||
+      partidaSalva.current === partida
+    ) {
+      return;
+    }
+
+    salvarResultadoPartida({
+      codigo: programa.codigo,
+      pontos: partida.pontos,
+      totais: partida.totais,
+    });
+
+    partidaSalva.current = partida;
+  }, [partida, programa.codigo, total]);
 
   function voltar() {
     if (router.canGoBack()) {
@@ -82,9 +105,6 @@ function Partida({ programa }) {
       };
     });
   }
-
-  const total = perguntas.length;
-  const numero = partida.indice + 1;
 
   if (partida.indice === total) {
     return (

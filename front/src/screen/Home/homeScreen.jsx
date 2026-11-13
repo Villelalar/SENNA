@@ -1,7 +1,9 @@
+import "../../../CSS/Screen/homeScreen.css";
+
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   ImageBackground,
@@ -14,6 +16,9 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import BarraNavegacao from "../../components/BarraNavegacao";
+import { obterProximoPrograma } from "../../data/estatisticas.js";
 
 const opcoes = [
   {
@@ -36,6 +41,7 @@ const opcoes = [
   },
   {
     titulo: "Estatística",
+    rota: "/estatistica",
     descricao: "Veja seus pontos",
     icone: "trending-up",
     cor: "#20bf59",
@@ -44,6 +50,7 @@ const opcoes = [
   },
   {
     titulo: "Perfil",
+    rota: "/perfil",
     descricao: "Veja seu progresso",
     icone: "person",
     cor: "#247c9e",
@@ -62,7 +69,15 @@ export default function HomeScreen() {
   const [menuAberto, setMenuAberto] = useState(false);
   const [alturaVisivel, setAlturaVisivel] = useState(0);
   const [alturaConteudo, setAlturaConteudo] = useState(0);
+  const [proximoPrograma, setProximoPrograma] = useState(null);
 
+  useFocusEffect(
+    useCallback(() => {
+      setProximoPrograma(obterProximoPrograma());
+    }, []),
+  );
+
+  const exibirBarraInferior = Platform.OS === "web";
   const podeRolar = alturaVisivel > 0 && alturaConteudo > alturaVisivel;
 
   const larguraUtil = width - insets.left - insets.right;
@@ -84,11 +99,34 @@ export default function HomeScreen() {
     }
   }
 
+  function continuarJogo() {
+    setMenuAberto(false);
+
+    const params = nomeRecebido ? { nome: nomeRecebido } : {};
+    const programa = obterProximoPrograma();
+
+    if (programa) {
+      router.push({
+        pathname: "/jogocap",
+        params: { ...params, programa: programa.codigo },
+      });
+    } else {
+      router.push({ pathname: "/book", params });
+    }
+  }
+
   function selecionarOpcao(opcao) {
     setMenuAberto(false);
 
     if (opcao.rota) {
-      router.push(opcao.rota);
+      const recebeNome =
+        opcao.rota === "/estatistica" || opcao.rota === "/perfil";
+
+      if (recebeNome && nomeRecebido) {
+        router.push({ pathname: opcao.rota, params: { nome: nomeRecebido } });
+      } else {
+        router.push(opcao.rota);
+      }
       return;
     }
 
@@ -110,7 +148,9 @@ export default function HomeScreen() {
             styles.areaRolagem,
             {
               paddingTop: insets.top + (telaCompacta ? 8 : 16),
-              paddingBottom: insets.bottom + (telaCompacta ? 8 : 12),
+              paddingBottom:
+                (exibirBarraInferior ? 0 : insets.bottom) +
+                (telaCompacta ? 8 : 12),
               paddingLeft: margem + insets.left,
               paddingRight: margem + insets.right,
             },
@@ -140,7 +180,7 @@ export default function HomeScreen() {
               <View style={styles.acoes}>
                 <TouchableOpacity
                   style={styles.perfil}
-                  onPress={opcaoIndisponivel}
+                  onPress={() => selecionarOpcao({ rota: "/perfil" })}
                   accessibilityLabel="Abrir perfil"
                   accessibilityRole="button"
                 >
@@ -215,7 +255,7 @@ export default function HomeScreen() {
                 styles.continuar,
                 telaCompacta && styles.continuarCompacto,
               ]}
-              onPress={opcaoIndisponivel}
+              onPress={continuarJogo}
               activeOpacity={0.8}
               accessibilityRole="button"
             >
@@ -225,14 +265,21 @@ export default function HomeScreen() {
 
               <View style={styles.textosContinuar}>
                 <View style={styles.etiqueta}>
-                  <Text style={styles.txtContinuar}>Continuar</Text>
+                  <Text style={styles.txtContinuar}>
+                    {proximoPrograma ? "Continuar" : "Ver programas"}
+                  </Text>
                 </View>
                 <Text style={styles.capitulo}>
-                  Capítulo 1 - Início Ayrton Senna
+                  {proximoPrograma?.titulo ??
+                    "Capítulo 1 - Início Ayrton Senna"}
                 </Text>
-                <Text style={styles.questoes}>
-                  Faltam 12 questões para fechar
-                </Text>
+                {proximoPrograma && (
+                  <Text style={styles.questoes}>
+                    {proximoPrograma.perguntas.length > 0
+                      ? `${proximoPrograma.perguntas.length} questões neste programa`
+                      : "Questões sorteadas dos programas anteriores"}
+                  </Text>
+                )}
               </View>
             </TouchableOpacity>
 
@@ -270,6 +317,15 @@ export default function HomeScreen() {
             </View>
           </View>
         </ScrollView>
+
+        {exibirBarraInferior && (
+          <footer className="rodape-home">
+            <BarraNavegacao
+              ativo="Início"
+              params={nomeRecebido ? { nome: nomeRecebido } : undefined}
+            />
+          </footer>
+        )}
       </ImageBackground>
     </View>
   );

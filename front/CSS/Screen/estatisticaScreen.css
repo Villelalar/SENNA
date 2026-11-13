@@ -1,0 +1,259 @@
+.container-estatistica {
+  --margem-estatistica: clamp(16px, 4vw, 24px);
+
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  color: #15141e;
+  background-color: #f5f5fb;
+  background-image:
+    radial-gradient(circle at 100% 0%, #ffe2a8 0%, transparent 45%),
+    radial-gradient(circle at 0% 35%, #a9c9ff 0%, transparent 45%),
+    radial-gradient(circle at 100% 100%, #9fe6c2 0%, transparent 55%);
+}
+
+.container-estatistica * {
+  box-sizing: border-box;
+}
+
+.container-estatistica .header_estatistica {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: max(1.5rem, env(safe-area-inset-top, 0px)) var(--margem-estatistica)
+    0.75rem;
+}
+
+.container-estatistica .header_estatistica h1 {
+  margin: 0;
+  font-size: clamp(24px, 6vw, 32px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.container-estatistica.fonte-carregada h1,
+.container-estatistica.fonte-carregada strong {
+  font-family: "Fredoka_700Bold", system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.container-estatistica .row_back_estatistica {
+  flex: 0 0 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  outline: none;
+  transition: transform 0.1s ease;
+}
+
+.container-estatistica .row_back_estatistica:active {
+  transform: scale(0.95);
+}
+
+.container-estatistica .row_back_estatistica:focus-visible {
+  outline: 3px solid #1561b9;
+  outline-offset: 2px;
+}
+
+.container-estatistica .row_back_estatistica svg {
+  color: #1a1a1a;
+  font-size: 1.5rem;
+}
+
+/* Área de rolagem */
+.container-estatistica .conteudo_estatistica {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 560px;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0.5rem var(--margem-estatistica) 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+.container-estatistica .conteudo_estatistica > * {
+  flex-shrink: 0;
+}
+
+/* Menu abaixo da área de rolagem */
+.container-estatistica > .conteudo_estatistica + :not(.rodape-tela),
+.container-estatistica > .rodape-tela > * {
+  position: static;
+  inset: auto;
+  transform: none;
+  translate: none;
+  width: calc(100% - 2 * var(--margem-estatistica));
+  max-width: 420px;
+  margin: 8px auto calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.container-estatistica > .rodape-tela {
+  display: flow-root;
+  width: 100%;
+}
+
+/* Pontos totais */
+.container-estatistica .card_pontos_totais {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px 16px;
+  background-color: #e7f7ec;
+  border: 1px solid #a6dfb8;
+  border-radius: 22px;
+}
+
+.container-estatistica .card_pontos_totais p {
+  margin: 0;
+  font-size: 15px;
+  color: #55515e;
+}
+
+.container-estatistica .card_pontos_totais strong {
+  font-size: clamp(56px, 16vw, 72px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* Tentativas */
+.container-estatistica .grade_tentativas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.container-estatistica .card_tentativa {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(30, 30, 60, 0.06);
+}
+
+.container-estatistica .card_tentativa strong {
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.container-estatistica .card_tentativa span {
+  font-size: 15px;
+  color: #55515e;
+}
+
+/* Gráfico */
+.container-estatistica .card_grafico {
+  padding: 18px 16px 14px;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(30, 30, 60, 0.06);
+}
+
+.container-estatistica .card_grafico h2 {
+  margin: 0 0 12px;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.container-estatistica .grafico {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.container-estatistica .grafico_coluna {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.container-estatistica .grafico_area {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 160px;
+}
+
+.container-estatistica .grafico_barra {
+  width: 100%;
+  min-height: 8px;
+  border-radius: 8px 8px 0 0;
+  transition: height 0.3s ease;
+}
+
+.container-estatistica .grafico_barra.vazia {
+  height: 8px;
+  background-color: #d4cfe5;
+  border-radius: 6px 6px 0 0;
+}
+
+.container-estatistica .grafico_coluna span {
+  font-size: 14px;
+  color: #55515e;
+}
+
+/* Sequência */
+.container-estatistica .card_sequencia {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background-color: #fff5d9;
+  border: 1px solid #f2d581;
+  border-radius: 20px;
+}
+
+.container-estatistica .selo_sequencia {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  background-color: #d62929;
+  border-radius: 14px;
+}
+
+.container-estatistica.fonte-carregada .selo_sequencia {
+  font-family: "Fredoka_700Bold", system-ui, sans-serif;
+}
+
+.container-estatistica .card_sequencia p {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
