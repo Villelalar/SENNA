@@ -6,4 +6,22 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
+  --fundo-app:
+    radial-gradient(ellipse 55% 45% at 92% 6%, rgba(255, 207, 145, 0.85), transparent 70%),
+    radial-gradient(ellipse 55% 55% at 6% 42%, rgba(126, 172, 245, 0.8), transparent 72%),
+    radial-gradient(ellipse 60% 45% at 95% 96%, rgba(122, 214, 160, 0.85), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 20% 98%, rgba(250, 196, 214, 0.55), transparent 70%),
+    #f6f6fb;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--fundo-app);
+}
+
+.fundo-app {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--fundo-app);
 }

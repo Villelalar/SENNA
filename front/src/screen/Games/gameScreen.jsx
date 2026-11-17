@@ -1,38 +1,44 @@
-import ArrowBack from "@mui/icons-material/ArrowBack";
-import Home from "@mui/icons-material/Home";
-import HomeOutlined from "@mui/icons-material/HomeOutlined";
-import MenuBook from "@mui/icons-material/MenuBook";
-import MenuBookOutlined from "@mui/icons-material/MenuBookOutlined";
-import Person from "@mui/icons-material/Person";
-import PersonOutlined from "@mui/icons-material/PersonOutlined";
-import SportsEsports from "@mui/icons-material/SportsEsports";
-import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
-import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
-import "../../../CSS/Screen/gamesScreen.css";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
-import { programaDisponivel, programas } from "../../data/partida";
+import BarraNavegacao from "../../components/BarraNavegacao";
+import TelaPadrao from "../../components/TelaPadrao";
+import { carregarProgramas } from "../../data/partida";
 
-const cores = ["#d92525", "#946600", "#1565c0", "#2e7d32"];
-
-const navegacao = [
-  { rotulo: "Início", rota: "/home", icone: HomeOutlined, ativo: Home },
-  {
-    rotulo: "Jogos",
-    rota: "/games",
-    icone: SportsEsportsOutlined,
-    ativo: SportsEsports,
-  },
-  { rotulo: "Livros", rota: "/book", icone: MenuBookOutlined, ativo: MenuBook },
-  { rotulo: "Perfil", rota: "/perfil", icone: PersonOutlined, ativo: Person },
-];
+const cores = ["#d62929", "#875700", "#1561b9", "#18864a"];
 
 export default function GameScreen() {
   const router = useRouter();
-  const pathname = usePathname();
+  const { width, height } = useWindowDimensions();
   const { nome } = useLocalSearchParams();
   const nomeRecebido = Array.isArray(nome) ? nome[0] : nome;
   const params = nomeRecebido ? { nome: nomeRecebido } : undefined;
-  const total = programas.filter(programaDisponivel).length;
+  const [programas, setProgramas] = useState([]);
+  const [erro, setErro] = useState("");
+  const total = programas.filter((programa) => programa.disponivel).length;
+
+  const compacta = width <= 360 || height <= 640;
+  const tamanhoSelo = Math.min(52, Math.max(44, width * 0.12));
+
+  useEffect(() => {
+    let ativo = true;
+
+    carregarProgramas()
+      .then((lista) => ativo && setProgramas(lista))
+      .catch((falha) => ativo && setErro(falha.message));
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   function voltar() {
     if (router.canGoBack()) {
@@ -42,90 +48,167 @@ export default function GameScreen() {
     }
   }
 
-  function navegar(rota) {
-    if (pathname === rota) return;
-
-    router.replace({ pathname: rota, params });
-  }
-
   return (
-    <div className="containe_principal_games">
-      <header className="header_games">
-        <div className="header_top">
-          <button
-            className="row_back"
-            type="button"
-            aria-label="Voltar"
-            onClick={voltar}
+    <TelaPadrao
+      titulo="Jogos"
+      onVoltar={voltar}
+      espaco={compacta ? 8 : 16}
+      extraCabecalho={
+        <Text
+          style={styles.subtitulo}
+          accessibilityRole={erro ? "alert" : undefined}
+        >
+          {erro ||
+            `${total} ${
+              total === 1 ? "programa disponível" : "programas disponíveis"
+            }`}
+        </Text>
+      }
+      rodape={<BarraNavegacao ativo="Jogos" params={params} />}
+    >
+      {programas.map((programa, indice) => {
+        const disponivel = programa.disponivel;
+
+        return (
+          <View
+            key={programa.codigo}
+            style={[styles.card, compacta && styles.cardCompacto]}
           >
-            <ArrowBack aria-hidden="true" />
-          </button>
-          <h1>Jogos</h1>
-        </div>
-
-        <p className="subtitle_games">
-          {total}{" "}
-          {total === 1 ? "programa disponível" : "programas disponíveis"}
-        </p>
-      </header>
-
-      <main className="content_games" aria-label="Programas">
-        <div className="lista_programas_games">
-          {programas.map((programa, indice) => {
-            const disponivel = programaDisponivel(programa);
-
-            return (
-              <div key={programa.codigo} className="card_games_container">
-                <div
-                  className="card_games_badge"
-                  style={{ backgroundColor: cores[indice % cores.length] }}
-                >
-                  <span>{programa.codigo}</span>
-                </div>
-
-                <div className="card_games_content">
-                  <h2>{programa.titulo}</h2>
-                  <p>{disponivel ? "30 perguntas" : "Gabarito incompleto"}</p>
-
-                  <button
-                    type="button"
-                    disabled={!disponivel}
-                    aria-label={`Jogar programa ${programa.codigo}`}
-                    onClick={() =>
-                      router.push({
-                        pathname: "/jogocap",
-                        params: { programa: programa.codigo },
-                      })
-                    }
-                  >
-                    Jogar
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </main>
-
-      <nav className="navigationBar_games" aria-label="Navegação principal">
-        {navegacao.map((item) => {
-          const ativo = pathname === item.rota;
-          const Icone = ativo ? item.ativo : item.icone;
-
-          return (
-            <button
-              key={item.rotulo}
-              type="button"
-              className={ativo ? "nav_item active" : "nav_item"}
-              aria-current={ativo ? "page" : undefined}
-              onClick={() => navegar(item.rota)}
+            <View
+              style={[
+                styles.selo,
+                {
+                  width: tamanhoSelo,
+                  height: tamanhoSelo,
+                  backgroundColor: cores[indice % cores.length],
+                },
+              ]}
             >
-              <Icone aria-hidden="true" />
-              <span>{item.rotulo}</span>
-            </button>
-          );
-        })}
-      </nav>
-    </div>
+              <Text style={styles.textoSelo}>{programa.codigo}</Text>
+            </View>
+
+            <View style={styles.conteudo}>
+              <Text style={styles.titulo}>{programa.titulo}</Text>
+              <Text style={styles.descricao}>
+                {disponivel
+                  ? `${programa.totalPerguntas} perguntas`
+                  : "Gabarito incompleto"}
+              </Text>
+
+              <Pressable
+                disabled={!disponivel}
+                accessibilityRole="button"
+                accessibilityLabel={`Jogar programa ${programa.codigo}`}
+                accessibilityState={{ disabled: !disponivel }}
+                onPress={() =>
+                  router.push({
+                    pathname: "/jogocap",
+                    params: { programa: programa.codigo },
+                  })
+                }
+                style={({ pressed }) => [
+                  styles.botaoJogar,
+                  !disponivel && styles.botaoDesativado,
+                  pressed && styles.pressionado,
+                ]}
+              >
+                <Ionicons
+                  name="play"
+                  size={18}
+                  color={disponivel ? "#ffffff" : "#9a97a8"}
+                />
+                <Text
+                  style={[
+                    styles.textoJogar,
+                    !disponivel && styles.textoDesativado,
+                  ]}
+                >
+                  Jogar
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        );
+      })}
+    </TelaPadrao>
   );
 }
+
+const styles = StyleSheet.create({
+  subtitulo: {
+    marginTop: 10,
+    fontSize: 15,
+    color: "#55515e",
+  },
+  card: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    padding: 16,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.06)",
+    borderRadius: 22,
+    boxShadow: "0px 6px 18px rgba(30, 30, 60, 0.06)",
+  },
+  cardCompacto: {
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  selo: {
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textoSelo: {
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+    color: "#ffffff",
+  },
+  conteudo: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "flex-start",
+  },
+  titulo: {
+    fontSize: 17,
+    fontWeight: "800",
+    lineHeight: 21,
+    color: "#15141e",
+  },
+  descricao: {
+    marginTop: 4,
+    marginBottom: 10,
+    fontSize: 14,
+    lineHeight: 18,
+    color: "#55515e",
+  },
+  botaoJogar: {
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    paddingLeft: 10,
+    paddingRight: 14,
+    backgroundColor: "#15141e",
+    borderRadius: 12,
+  },
+  botaoDesativado: {
+    backgroundColor: "#e5e2ef",
+  },
+  pressionado: {
+    transform: [{ scale: 0.96 }],
+  },
+  textoJogar: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#ffffff",
+  },
+  textoDesativado: {
+    color: "#9a97a8",
+  },
+});

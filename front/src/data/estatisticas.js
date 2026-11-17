@@ -1,46 +1,30 @@
-import { programaDisponivel, programas } from "./partida";
+import { requisitar } from "./api";
+import { carregarProgramas } from "./partida";
+import { exigirSessao } from "./sessao";
 
 export const PONTOS_MAXIMOS_PROGRAMA = 90;
 export const PERGUNTAS_POR_PROGRAMA = 30;
 
-export const perfilPadrao = {
-  curso: "Sistemas de Informação",
-  instituicao: "UniLaSalle",
-};
-
-const chaveHistorico = "senna:partidas-concluidas:v1";
 const milissegundosPorDia = 86_400_000;
 
-const programasDoLivro = programas.filter(
-  (programa) => programa.perguntas.length > 0,
-);
-
-let historicoEmMemoria = [];
-let gravacaoBloqueada = false;
-
-function lerHistorico() {
-  if (typeof window === "undefined" || gravacaoBloqueada) {
-    return historicoEmMemoria;
-  }
-
-  try {
-    const salvo = JSON.parse(window.localStorage.getItem(chaveHistorico));
-    return Array.isArray(salvo) ? salvo : historicoEmMemoria;
-  } catch {
-    return historicoEmMemoria;
-  }
+function caminhoPartidas() {
+  return `/users/${encodeURIComponent(exigirSessao()._id)}/partidas`;
 }
 
-function gravarHistorico(historico) {
-  historicoEmMemoria = historico;
+function caminhoAtividade() {
+  return `/users/${encodeURIComponent(exigirSessao()._id)}/atividade`;
+}
 
-  if (typeof window === "undefined") return;
+async function lerHistorico() {
+  return requisitar(caminhoPartidas());
+}
 
+async function lerDiasAtivos() {
   try {
-    window.localStorage.setItem(chaveHistorico, JSON.stringify(historico));
-    gravacaoBloqueada = false;
+    const { dias } = await requisitar(caminhoAtividade());
+    return Array.isArray(dias) ? dias : [];
   } catch {
-    gravacaoBloqueada = true;
+    return [];
   }
 }
 
@@ -51,22 +35,35 @@ function diaLocal(data) {
   );
 }
 
-export function salvarResultadoPartida({ codigo, pontos, totais }) {
-  gravarHistorico([
-    ...lerHistorico(),
-    {
-      codigo,
-      pontos,
-      totais: [...totais],
-      dia: diaLocal(new Date()),
-    },
-  ]);
+// Marca o dia de hoje como ativo (basta responder uma pergunta).
+// Só faz a requisição uma vez por dia enquanto o app está aberto.
+let ultimoDiaRegistrado = null;
+
+export async function registrarAtividadeHoje() {
+  const hoje = diaLocal(new Date());
+  if (ultimoDiaRegistrado === hoje) return;
+
+  await requisitar(caminhoAtividade(), {
+    metodo: "POST",
+    corpo: { dia: hoje },
+  });
+  ultimoDiaRegistrado = hoje;
 }
 
-function resumirHistorico(historico) {
+export async function salvarResultadoPartida({ codigo, totais }) {
+  return requisitar(caminhoPartidas(), {
+    metodo: "POST",
+    corpo: { codigo, totais: [...totais], dia: diaLocal(new Date()) },
+  });
+}
+
+function resumirHistorico(historico, programas, diasAtivos = []) {
+  const programasDoLivro = programas.filter(
+    (programa) => !programa.revisao && programa.totalPerguntas > 0,
+  );
   const totais = [0, 0, 0, 0];
   const melhoresPontos = new Map();
-  const diasJogados = new Set();
+  const diasJogados = new Set(diasAtivos);
 
   for (const resultado of historico) {
     totais[0] += resultado.totais[0];
@@ -101,14 +98,19 @@ function resumirHistorico(historico) {
   const perguntasRespondidas = programasDoLivro.reduce(
     (total, programa) =>
       total +
-      (melhoresPontos.has(programa.codigo) ? programa.perguntas.length : 0),
+      (melhoresPontos.has(programa.codigo) ? programa.totalPerguntas : 0),
     0,
   );
 
   const totalPerguntasLivro = programasDoLivro.reduce(
-    (total, programa) => total + programa.perguntas.length,
+    (total, programa) => total + programa.totalPerguntas,
     0,
   );
+
+  const proximoPrograma =
+    programas.find(
+      (programa) => !melhoresPontos.has(programa.codigo) && programa.disponivel,
+    ) ?? null;
 
   return {
     pontosTotais,
@@ -117,30 +119,29 @@ function resumirHistorico(historico) {
     diasSeguidos,
     perguntasRespondidas,
     totalPerguntasLivro,
-    pontosPorPrograma: programasDoLivro.map(({ codigo }) => ({
+    pontosPorPrograma: programasDoLivro.map(({ codigo, totalPerguntas }) => ({
       codigo,
       pontos: melhoresPontos.get(codigo) ?? 0,
+      maximo: totalPerguntas * 3 || PONTOS_MAXIMOS_PROGRAMA,
     })),
+    programasConcluidos: [...melhoresPontos.keys()],
+    proximoPrograma,
   };
 }
 
-export const estatisticasIniciais = resumirHistorico([]);
+export const estatisticasIniciais = resumirHistorico([], []);
 
-export function obterEstatisticas() {
-  return resumirHistorico(lerHistorico());
+export async function obterEstatisticas() {
+  const [historico, programas, diasAtivos] = await Promise.all([
+    lerHistorico(),
+    carregarProgramas(),
+    lerDiasAtivos(),
+  ]);
+
+  return resumirHistorico(historico, programas, diasAtivos);
 }
 
-export function zerarProgresso() {
-  gravarHistorico([]);
-}
-
-export function obterProximoPrograma() {
-  const concluidos = new Set(lerHistorico().map(({ codigo }) => codigo));
-
-  return (
-    programas.find(
-      (programa) =>
-        !concluidos.has(programa.codigo) && programaDisponivel(programa),
-    ) ?? null
-  );
+export async function zerarProgresso() {
+  ultimoDiaRegistrado = null;
+  return requisitar(caminhoPartidas(), { metodo: "DELETE" });
 }

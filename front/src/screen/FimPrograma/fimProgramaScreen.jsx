@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFonts, Fredoka_700Bold } from "@expo-google-fonts/fredoka";
 import {
-  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,6 +9,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import FundoApp from "../../components/FundoApp";
 
 const categorias = [
   { selo: "1ª", texto: "Acertos na 1ª tentativa", cor: "#18864a" },
@@ -54,11 +55,7 @@ export default function FimProgramaScreen({
   }
 
   return (
-    <ImageBackground
-      source={require("../../../assets/nuvens.png")}
-      style={styles.fundo}
-      resizeMode="cover"
-    >
+    <FundoApp style={styles.fundo}>
       <ScrollView
         contentContainerStyle={[
           styles.rolagem,
@@ -120,7 +117,7 @@ export default function FimProgramaScreen({
           </View>
         </View>
       </ScrollView>
-    </ImageBackground>
+    </FundoApp>
   );
 }
 

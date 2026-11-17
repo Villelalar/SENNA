@@ -16,6 +16,12 @@
   margin: 0;
   padding: 0;
   overflow: hidden;
+  color: #15141e;
+  background: var(--fundo-app);
+}
+
+.containe_principal_games * {
+  box-sizing: border-box;
 }
 
 .containe_principal_games > .header_games {
@@ -24,29 +30,57 @@
   width: 100%;
   max-width: var(--largura-games);
   margin: 0 auto;
-  padding: max(12px, env(safe-area-inset-top)) var(--margem-games) 8px;
+  padding: max(1.5rem, env(safe-area-inset-top, 0px)) var(--margem-games)
+    0.75rem;
 }
 
 .containe_principal_games .header_top {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 1rem;
 }
 
 .containe_principal_games .header_top h1 {
   margin: 0;
   font-size: clamp(24px, 6vw, 32px);
+  font-weight: 800;
   line-height: 1.15;
 }
 
 .containe_principal_games .row_back {
-  flex: 0 0 44px;
-  min-width: 44px;
-  min-height: 44px;
+  flex: 0 0 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: transform 0.1s ease;
+}
+
+.containe_principal_games .row_back:active {
+  transform: scale(0.95);
+}
+
+.containe_principal_games .row_back:focus-visible {
+  outline: 3px solid #1561b9;
+  outline-offset: 2px;
+}
+
+.containe_principal_games .row_back svg {
+  color: #1a1a1a;
+  font-size: 1.5rem;
 }
 
 .containe_principal_games .subtitle_games {
-  margin: 4px 0 0;
+  margin: 10px 0 0;
+  font-size: 15px;
+  color: #55515e;
 }
 
 .containe_principal_games > .content_games {
@@ -66,31 +100,40 @@
 .containe_principal_games .lista_programas_games {
   box-sizing: border-box;
   display: grid;
-  gap: 10px;
+  gap: 1rem;
   width: 100%;
   max-width: var(--largura-games);
   margin: 0 auto;
-  padding: 4px var(--margem-games) 10px;
+  padding: 0.75rem var(--margem-games) 1rem;
 }
 
 .containe_principal_games .card_games_container {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   width: 100%;
   height: auto;
   min-height: 0;
   margin: 0;
-  padding: 12px;
+  padding: 16px;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(30, 30, 60, 0.06);
 }
 
 .containe_principal_games .card_games_badge {
   display: grid;
   place-items: center;
-  flex: 0 0 clamp(38px, 12vw, 52px);
-  width: clamp(38px, 12vw, 52px);
-  height: clamp(38px, 12vw, 52px);
+  flex: 0 0 clamp(44px, 12vw, 52px);
+  width: clamp(44px, 12vw, 52px);
+  height: clamp(44px, 12vw, 52px);
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #ffffff;
 }
 
 .containe_principal_games .card_games_content {
@@ -100,55 +143,67 @@
 
 .containe_principal_games .card_games_content h2 {
   margin: 0;
-  font-size: clamp(15px, 4vw, 18px);
-  line-height: 1.2;
+  font-size: clamp(15px, 4vw, 17px);
+  font-weight: 800;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 .containe_principal_games .card_games_content p {
-  margin: 4px 0 8px;
+  margin: 4px 0 10px;
   font-size: clamp(12px, 3.3vw, 14px);
   line-height: 1.3;
+  color: #55515e;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
-.containe_principal_games .progress_track {
-  width: 100%;
-  height: 5px;
-  overflow: hidden;
-}
-
-.containe_principal_games > .navigationBar_games {
-  box-sizing: border-box;
-  position: static;
-  transform: none;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: stretch;
-  gap: 4px;
-  width: 100%;
-  max-width: var(--largura-games);
-  height: auto;
-  margin: 0 auto;
-  padding: 6px 8px max(6px, env(safe-area-inset-bottom));
-}
-
-.containe_principal_games .navigationBar_games .nav_item {
-  display: flex;
-  flex-direction: column;
+.containe_principal_games .botao_jogar {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 3px;
-  width: 100%;
-  min-width: 0;
-  min-height: 44px;
-  padding: 4px 2px;
-  font-size: clamp(11px, 3vw, 13px);
+  gap: 4px;
+  min-height: 36px;
+  padding: 6px 14px 6px 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #15141e;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.containe_principal_games .navigationBar_games .nav_item svg {
-  font-size: 22px;
+.containe_principal_games .botao_jogar svg {
+  font-size: 20px;
+}
+
+.containe_principal_games .botao_jogar:active {
+  transform: scale(0.96);
+}
+
+.containe_principal_games .botao_jogar:focus-visible {
+  outline: 3px solid #1561b9;
+  outline-offset: 2px;
+}
+
+.containe_principal_games .botao_jogar:disabled {
+  color: #9a97a8;
+  background-color: #e5e2ef;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.containe_principal_games > .content_games + * {
+  position: static;
+  inset: auto;
+  transform: none;
+  translate: none;
+  width: calc(100% - 2 * var(--margem-games));
+  max-width: 420px;
+  margin: 8px auto calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 360px), (max-height: 640px) {

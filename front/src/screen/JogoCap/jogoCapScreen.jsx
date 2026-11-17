@@ -1,8 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ImageBackground,
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -12,13 +12,17 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { salvarResultadoPartida } from "../../data/estatisticas";
+import FundoApp from "../../components/FundoApp";
 import {
-  criarPerguntas,
+  registrarAtividadeHoje,
+  salvarResultadoPartida,
+} from "../../data/estatisticas";
+import {
+  carregarPerguntas,
+  carregarProgramas,
   novaPartida,
-  programaDisponivel,
-  programas,
   registrarResposta,
+  verificarResposta,
 } from "../../data/partida";
 import AcertoScreen from "../AcertoPag/acertoScreen";
 import FimProgramaScreen from "../FimPrograma/fimProgramaScreen";
@@ -26,26 +30,71 @@ import FimProgramaScreen from "../FimPrograma/fimProgramaScreen";
 const letras = ["A", "B", "C", "D"];
 const cores = ["#db292b", "#ffd500", "#1963c2", "#2b8031"];
 
+function mostrarAviso(titulo, mensagem) {
+  if (Platform.OS === "web") {
+    window.alert(`${titulo}\n\n${mensagem}`);
+  } else {
+    Alert.alert(titulo, mensagem);
+  }
+}
+
+function Aviso({ texto, botao, onPress }) {
+  return (
+    <FundoApp style={styles.fundo}>
+      <View style={styles.erro}>
+        <Text style={styles.pergunta}>{texto}</Text>
+        {botao && (
+          <Pressable style={styles.botaoBranco} onPress={onPress}>
+            <Text style={styles.negrito}>{botao}</Text>
+          </Pressable>
+        )}
+      </View>
+    </FundoApp>
+  );
+}
+
 export default function JogoCapScreen() {
   const router = useRouter();
   const { programa = "011" } = useLocalSearchParams();
-  const escolhido = programas.find((item) => item.codigo === programa);
+  const codigo = Array.isArray(programa) ? programa[0] : programa;
+  const [estado, setEstado] = useState({ carregando: true, erro: "", lista: [] });
 
-  if (!escolhido || !programaDisponivel(escolhido)) {
+  useEffect(() => {
+    let ativo = true;
+
+    carregarProgramas()
+      .then((lista) => ativo && setEstado({ carregando: false, erro: "", lista }))
+      .catch(
+        (erro) =>
+          ativo &&
+          setEstado({ carregando: false, erro: erro.message, lista: [] }),
+      );
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const verProgramas = () => router.replace("/games");
+
+  if (estado.carregando) {
+    return <Aviso texto="Carregando programa..." />;
+  }
+
+  const escolhido = estado.lista.find((item) => item.codigo === codigo);
+
+  if (estado.erro || !escolhido || !escolhido.disponivel) {
     return (
-      <View style={styles.erro}>
-        <Text style={styles.pergunta}>
-          {escolhido
+      <Aviso
+        texto={
+          estado.erro ||
+          (escolhido
             ? "O gabarito deste programa está incompleto."
-            : "Programa não encontrado."}
-        </Text>
-        <Pressable
-          style={styles.botaoBranco}
-          onPress={() => router.replace("/games")}
-        >
-          <Text style={styles.negrito}>Ver programas</Text>
-        </Pressable>
-      </View>
+            : "Programa não encontrado.")
+        }
+        botao="Ver programas"
+        onPress={verProgramas}
+      />
     );
   }
 
@@ -55,12 +104,39 @@ export default function JogoCapScreen() {
 function Partida({ programa }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [perguntas, setPerguntas] = useState(() => criarPerguntas(programa));
+  const [perguntas, setPerguntas] = useState(null);
+  const [erroCarregamento, setErroCarregamento] = useState("");
   const [partida, setPartida] = useState(novaPartida);
+  const [verificando, setVerificando] = useState(false);
   const partidaSalva = useRef(null);
+  const verificacaoEmAndamento = useRef(false);
+  const requisicaoAtual = useRef(0);
 
-  const total = perguntas.length;
+  const total = perguntas?.length ?? 0;
   const numero = partida.indice + 1;
+
+  const buscarPerguntas = useCallback(async () => {
+    const requisicao = ++requisicaoAtual.current;
+    setPerguntas(null);
+    setErroCarregamento("");
+
+    try {
+      const lista = await carregarPerguntas(programa.codigo);
+      if (requisicao === requisicaoAtual.current) setPerguntas(lista);
+    } catch (erro) {
+      if (requisicao === requisicaoAtual.current) {
+        setErroCarregamento(erro.message);
+      }
+    }
+  }, [programa.codigo]);
+
+  useEffect(() => {
+    buscarPerguntas();
+
+    return () => {
+      requisicaoAtual.current += 1;
+    };
+  }, [buscarPerguntas]);
 
   useEffect(() => {
     if (
@@ -71,13 +147,14 @@ function Partida({ programa }) {
       return;
     }
 
+    partidaSalva.current = partida;
+
     salvarResultadoPartida({
       codigo: programa.codigo,
-      pontos: partida.pontos,
       totais: partida.totais,
-    });
-
-    partidaSalva.current = partida;
+    }).catch((erro) =>
+      mostrarAviso("Não foi possível salvar o resultado", erro.message),
+    );
   }, [partida, programa.codigo, total]);
 
   function voltar() {
@@ -89,8 +166,8 @@ function Partida({ programa }) {
   }
 
   function reiniciar() {
-    setPerguntas(criarPerguntas(programa));
     setPartida(novaPartida());
+    buscarPerguntas();
   }
 
   function avancar() {
@@ -104,6 +181,30 @@ function Partida({ programa }) {
         resultado: null,
       };
     });
+  }
+
+  if (erroCarregamento) {
+    return (
+      <Aviso
+        texto={erroCarregamento}
+        botao="Tentar novamente"
+        onPress={buscarPerguntas}
+      />
+    );
+  }
+
+  if (!perguntas) {
+    return <Aviso texto="Carregando perguntas..." />;
+  }
+
+  if (total === 0) {
+    return (
+      <Aviso
+        texto="Este programa ainda não tem perguntas."
+        botao="Voltar"
+        onPress={voltar}
+      />
+    );
   }
 
   if (partida.indice === total) {
@@ -135,19 +236,33 @@ function Partida({ programa }) {
   const pergunta = perguntas[partida.indice];
   const tentativa = partida.descartadas.length + 1;
 
-  function responder(indice) {
-    setPartida((atual) => {
-      if (atual.indice !== partida.indice) return atual;
-      return registrarResposta(atual, indice, pergunta.resposta);
-    });
+  async function responder(indice) {
+    if (verificacaoEmAndamento.current) return;
+
+    const indicePergunta = partida.indice;
+    verificacaoEmAndamento.current = true;
+    setVerificando(true);
+
+    try {
+      const acertou = await verificarResposta(pergunta._id, indice);
+
+      // Respondeu uma pergunta hoje: conta para a sequência de dias.
+      registrarAtividadeHoje().catch(() => {});
+
+      setPartida((atual) => {
+        if (atual.indice !== indicePergunta) return atual;
+        return registrarResposta(atual, indice, acertou);
+      });
+    } catch (erro) {
+      mostrarAviso("Não foi possível verificar a resposta", erro.message);
+    } finally {
+      verificacaoEmAndamento.current = false;
+      setVerificando(false);
+    }
   }
 
   return (
-    <ImageBackground
-      source={require("../../../assets/nuvens.png")}
-      style={styles.fundo}
-      resizeMode="cover"
-    >
+    <FundoApp style={styles.fundo}>
       <StatusBar style="dark" />
       <ScrollView
         contentContainerStyle={[
@@ -220,8 +335,8 @@ function Partida({ programa }) {
                   key={letras[indice]}
                   accessibilityRole="button"
                   accessibilityLabel={`${letras[indice]}. ${alternativa}`}
-                  accessibilityState={{ disabled: descartada }}
-                  disabled={descartada}
+                  accessibilityState={{ disabled: descartada || verificando }}
+                  disabled={descartada || verificando}
                   onPress={() => responder(indice)}
                   style={[
                     styles.alternativa,
@@ -267,7 +382,7 @@ function Partida({ programa }) {
           </Pressable>
         </View>
       </ScrollView>
-    </ImageBackground>
+    </FundoApp>
   );
 }
 

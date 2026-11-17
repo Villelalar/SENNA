@@ -1,11 +1,10 @@
 import "../../../CSS/Screen/homeScreen.css";
 
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useState } from "react";
 import {
-  Alert,
   ImageBackground,
   Platform,
   ScrollView,
@@ -18,17 +17,28 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BarraNavegacao from "../../components/BarraNavegacao";
-import { obterProximoPrograma } from "../../data/estatisticas.js";
+import { obterEstatisticas } from "../../data/estatisticas.js";
+import { carregarProgramas } from "../../data/partida";
+import { lerSessao } from "../../data/sessao";
+import { avisar } from "../../utils/avisos";
+
+const ehWeb = Platform.OS === "web";
+const Fundo = ehWeb ? View : ImageBackground;
+const propsFundo = ehWeb
+  ? {}
+  : { source: require("../../../assets/nuvens.png"), resizeMode: "cover" };
 
 const opcoes = [
   {
     titulo: "Jogos",
-    descricao: "12 disponíveis",
+    descricao: "Programas do livro",
     rota: "/games",
     icone: "game-controller",
     cor: "#e64e42",
-    fundo: "#fff2f0",
-    borda: "#df8a83",
+    fundo: "#fde3df",
+    borda: "#ee8f86",
+    gradiente:
+      "linear-gradient(135deg, #f9a89d 0%, #fcd3cd 45%, #fff5f3 100%)",
   },
   {
     titulo: "Livros",
@@ -36,8 +46,10 @@ const opcoes = [
     rota: "/book",
     icone: "book",
     cor: "#e4c300",
-    fundo: "#fffbed",
-    borda: "#e2cf68",
+    fundo: "#fff7d1",
+    borda: "#e9d46a",
+    gradiente:
+      "linear-gradient(135deg, #fffdf3 0%, #fff6c9 55%, #ffec98 100%)",
   },
   {
     titulo: "Estatística",
@@ -45,24 +57,37 @@ const opcoes = [
     descricao: "Veja seus pontos",
     icone: "trending-up",
     cor: "#20bf59",
-    fundo: "#eefbf2",
-    borda: "#79c99a",
+    fundo: "#e1f7e8",
+    borda: "#7fd29f",
+    gradiente:
+      "linear-gradient(135deg, #b6eec6 0%, #dbf7e4 50%, #f4fdf7 100%)",
   },
   {
     titulo: "Perfil",
     rota: "/perfil",
-    descricao: "Veja seu progresso",
+    descricao: "Ver seu progresso",
     icone: "person",
     cor: "#247c9e",
-    fundo: "#eff8fb",
-    borda: "#80adbd",
+    fundo: "#e3edf2",
+    borda: "#7fa6b8",
+    gradiente:
+      "linear-gradient(135deg, #9dbbca 0%, #d2e1e9 50%, #f8fbfc 100%)",
   },
 ];
+
+function saudacaoDoHorario() {
+  const hora = new Date().getHours();
+  if (hora < 12) return "Bom dia";
+  if (hora < 18) return "Boa tarde";
+  return "Boa noite";
+}
 
 export default function HomeScreen() {
   const router = useRouter();
   const { nome } = useLocalSearchParams();
-  const nomeRecebido = Array.isArray(nome) ? nome[0] : nome;
+  const [nomeSessao, setNomeSessao] = useState(null);
+  const nomeRecebido =
+    nomeSessao ?? (Array.isArray(nome) ? nome[0] : nome);
   const inicial = nomeRecebido?.trim().charAt(0).toUpperCase() || "L";
   const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -70,14 +95,39 @@ export default function HomeScreen() {
   const [alturaVisivel, setAlturaVisivel] = useState(0);
   const [alturaConteudo, setAlturaConteudo] = useState(0);
   const [proximoPrograma, setProximoPrograma] = useState(null);
+  const [diasSeguidos, setDiasSeguidos] = useState(0);
+  const [programasDisponiveis, setProgramasDisponiveis] = useState(null);
+  const [saudacao, setSaudacao] = useState(saudacaoDoHorario);
 
   useFocusEffect(
     useCallback(() => {
-      setProximoPrograma(obterProximoPrograma());
+      let ativo = true;
+      setNomeSessao(lerSessao()?.nome ?? null);
+      setSaudacao(saudacaoDoHorario());
+
+      carregarProgramas()
+        .then((lista) => {
+          if (!ativo) return;
+          setProgramasDisponiveis(
+            lista.filter((programa) => programa.disponivel).length,
+          );
+        })
+        .catch(() => {});
+
+      obterEstatisticas()
+        .then((estatisticas) => {
+          if (!ativo) return;
+          setProximoPrograma(estatisticas.proximoPrograma);
+          setDiasSeguidos(estatisticas.diasSeguidos);
+        })
+        .catch(() => {});
+
+      return () => {
+        ativo = false;
+      };
     }, []),
   );
 
-  const exibirBarraInferior = Platform.OS === "web";
   const podeRolar = alturaVisivel > 0 && alturaConteudo > alturaVisivel;
 
   const larguraUtil = width - insets.left - insets.right;
@@ -87,28 +137,23 @@ export default function HomeScreen() {
   const margem = telaEstreita ? 12 : 16;
   const larguraConteudo = Math.max(0, Math.min(larguraUtil - margem * 2, 480));
   const colunas = larguraConteudo < 260 || fontScale > 1.3 ? 1 : 2;
-  const espaco = telaCompacta ? 8 : 10;
+  const espaco = telaCompacta ? 10 : 14;
   const larguraCard = (larguraConteudo - espaco * (colunas - 1)) / colunas;
   const tamanhoTitulo = telaCompacta ? 26 : 30;
 
   function opcaoIndisponivel() {
-    if (Platform.OS === "web") {
-      window.alert("Esta opção está indisponível.");
-    } else {
-      Alert.alert("Opção indisponível", "Esta opção está indisponível.");
-    }
+    avisar("Opção indisponível", "Esta opção está indisponível.");
   }
 
   function continuarJogo() {
     setMenuAberto(false);
 
     const params = nomeRecebido ? { nome: nomeRecebido } : {};
-    const programa = obterProximoPrograma();
 
-    if (programa) {
+    if (proximoPrograma) {
       router.push({
         pathname: "/jogocap",
-        params: { ...params, programa: programa.codigo },
+        params: { ...params, programa: proximoPrograma.codigo },
       });
     } else {
       router.push({ pathname: "/book", params });
@@ -137,20 +182,16 @@ export default function HomeScreen() {
     <View style={styles.tela}>
       <StatusBar style="dark" />
 
-      <ImageBackground
-        source={require("../../../assets/nuvens.png")}
-        style={styles.fundo}
-        resizeMode="cover"
-      >
+      <Fundo style={styles.fundo} {...propsFundo}>
+        {ehWeb && <div className="home-camada home-fundo" aria-hidden="true" />}
+
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[
             styles.areaRolagem,
             {
               paddingTop: insets.top + (telaCompacta ? 8 : 16),
-              paddingBottom:
-                (exibirBarraInferior ? 0 : insets.bottom) +
-                (telaCompacta ? 8 : 12),
+              paddingBottom: telaCompacta ? 8 : 12,
               paddingLeft: margem + insets.left,
               paddingRight: margem + insets.right,
             },
@@ -225,7 +266,7 @@ export default function HomeScreen() {
                 { marginTop: telaCompacta ? 12 : 20 },
               ]}
             >
-              <Text style={styles.saudacao}>Boa tarde</Text>
+              <Text style={styles.saudacao}>{saudacao}</Text>
 
               <Text
                 style={[
@@ -245,7 +286,9 @@ export default function HomeScreen() {
                 <View style={styles.circuloFogo}>
                   <Ionicons name="flame" size={14} color="#fff" />
                 </View>
-                <Text style={styles.dias}>6 dias</Text>
+                <Text style={styles.dias}>
+                  {diasSeguidos} {diasSeguidos === 1 ? "dia" : "dias"}
+                </Text>
                 <Text style={styles.seguidos}>seguidos</Text>
               </View>
             </View>
@@ -275,9 +318,9 @@ export default function HomeScreen() {
                 </Text>
                 {proximoPrograma && (
                   <Text style={styles.questoes}>
-                    {proximoPrograma.perguntas.length > 0
-                      ? `${proximoPrograma.perguntas.length} questões neste programa`
-                      : "Questões sorteadas dos programas anteriores"}
+                    {proximoPrograma.revisao
+                      ? "Questões sorteadas dos programas anteriores"
+                      : `${proximoPrograma.totalPerguntas} questões neste programa`}
                   </Text>
                 )}
               </View>
@@ -300,6 +343,14 @@ export default function HomeScreen() {
                   activeOpacity={0.8}
                   accessibilityRole="button"
                 >
+                  {ehWeb && (
+                    <div
+                      className="home-camada"
+                      aria-hidden="true"
+                      style={{ background: opcao.gradiente }}
+                    />
+                  )}
+
                   <View
                     style={[
                       styles.iconeOpcao,
@@ -311,22 +362,26 @@ export default function HomeScreen() {
                   </View>
 
                   <Text style={styles.txtOpcao}>{opcao.titulo}</Text>
-                  <Text style={styles.descricao}>{opcao.descricao}</Text>
+                  <Text style={styles.descricao}>
+                    {opcao.rota === "/games" && programasDisponiveis !== null
+                      ? `${programasDisponiveis} ${
+                          programasDisponiveis === 1
+                            ? "disponível"
+                            : "disponíveis"
+                        }`
+                      : opcao.descricao}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         </ScrollView>
 
-        {exibirBarraInferior && (
-          <footer className="rodape-home">
-            <BarraNavegacao
-              ativo="Início"
-              params={nomeRecebido ? { nome: nomeRecebido } : undefined}
-            />
-          </footer>
-        )}
-      </ImageBackground>
+        <BarraNavegacao
+          ativo="Início"
+          params={nomeRecebido ? { nome: nomeRecebido } : undefined}
+        />
+      </Fundo>
     </View>
   );
 }
@@ -422,13 +477,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   menu: {
+    position: "absolute",
+    top: 56,
+    right: 0,
+    zIndex: 20,
+    elevation: 8,
     width: "100%",
     maxWidth: 320,
-    alignSelf: "flex-end",
-    marginTop: 12,
     padding: 10,
     borderRadius: 12,
     backgroundColor: "rgba(255,255,255,0.97)",
+    boxShadow: "0px 8px 24px rgba(30, 30, 60, 0.12)",
   },
   botaoMenu: {
     minHeight: 44,
@@ -467,9 +526,11 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 20,
     paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginTop: 8,
+    paddingLeft: 6,
+    paddingRight: 16,
+    marginTop: 12,
     backgroundColor: "#fff",
+    boxShadow: "0px 4px 14px rgba(30, 30, 60, 0.08)",
   },
   circuloFogo: {
     width: 24,
@@ -480,12 +541,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dias: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "500",
     color: "#1e1e1e",
   },
   seguidos: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#555",
   },
   continuar: {
@@ -494,11 +555,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     padding: 12,
-    marginTop: 16,
+    marginTop: 20,
     backgroundColor: "rgba(255,255,255,0.94)",
     borderWidth: 1,
-    borderColor: "#dd8e87",
+    borderColor: "#ee8f86",
     borderRadius: 12,
+    boxShadow: "0px 6px 18px rgba(30, 30, 60, 0.06)",
   },
   continuarCompacto: {
     marginTop: 12,
@@ -542,14 +604,15 @@ const styles = StyleSheet.create({
   grade: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginTop: 10,
+    marginTop: 14,
   },
   card: {
     minHeight: 110,
-    padding: 12,
+    padding: 14,
     justifyContent: "center",
     borderWidth: 1,
     borderRadius: 12,
+    boxShadow: "0px 6px 18px rgba(30, 30, 60, 0.06)",
   },
   cardCompacto: {
     minHeight: 92,
@@ -569,13 +632,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   txtOpcao: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#202020",
+    position: "relative",
+    fontSize: 19,
+    fontWeight: "500",
+    color: "#1d1d1d",
   },
   descricao: {
+    position: "relative",
     fontSize: 12,
-    color: "#707070",
-    marginTop: 4,
+    color: "#4f4f4f",
+    marginTop: 2,
   },
 });

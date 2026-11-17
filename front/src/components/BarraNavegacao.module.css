@@ -43,13 +43,20 @@
   transform: scale(0.96);
 }
 
+@media (hover: hover) {
+  .item:not(.ativo):hover {
+    color: var(--cor-item);
+    background-color: var(--fundo-item);
+  }
+}
+
 .item:focus-visible {
   outline: 3px solid #1561b9;
   outline-offset: 2px;
 }
 
 .ativo {
-  background-color: #15141e;
-  color: #ffffff;
+  background-color: var(--fundo-item);
+  color: var(--cor-item);
   font-weight: 700;
 }

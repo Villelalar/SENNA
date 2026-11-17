@@ -1,4 +1,16 @@
+.home-camada {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.home-fundo {
+  background: var(--fundo-app);
+}
+
 .rodape-home {
+  position: relative;
   box-sizing: border-box;
   flex-shrink: 0;
   width: 100%;

@@ -10,11 +10,7 @@
   min-height: 0;
   overflow: hidden;
   color: #15141e;
-  background-color: #f5f5fb;
-  background-image:
-    radial-gradient(circle at 100% 0%, #ffe2a8 0%, transparent 45%),
-    radial-gradient(circle at 0% 35%, #a9c9ff 0%, transparent 45%),
-    radial-gradient(circle at 100% 100%, #9fe6c2 0%, transparent 55%);
+  background: var(--fundo-app);
 }
 
 .container-perfil * {

@@ -3,7 +3,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFonts, Fredoka_700Bold } from "@expo-google-fonts/fredoka";
 import {
   Image,
-  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +10,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import FundoApp from "../../components/FundoApp";
 
 export default function AcertoScreen({
   programa = "011",
@@ -35,11 +36,7 @@ export default function AcertoScreen({
   }
 
   return (
-    <ImageBackground
-      source={require("../../../assets/nuvens.png")}
-      style={styles.fundo}
-      resizeMode="cover"
-    >
+    <FundoApp style={styles.fundo}>
       <ScrollView
         contentContainerStyle={[
           styles.rolagem,
@@ -109,7 +106,7 @@ export default function AcertoScreen({
           </Pressable>
         </View>
       </ScrollView>
-    </ImageBackground>
+    </FundoApp>
   );
 }
 

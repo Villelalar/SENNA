@@ -16,6 +16,9 @@ import {
   View,
 } from "react-native";
 
+import { requisitar } from "../../data/api";
+import { salvarSessao } from "../../data/sessao";
+
 export default function LoginScreen() {
   const router = useRouter();
 
@@ -38,36 +41,29 @@ export default function LoginScreen() {
       return;
     }
 
-    const apiUrl = (
-      process.env.EXPO_PUBLIC_API_URL?.trim() || "http://localhost:3000"
-    ).replace(/\/+$/, "");
-
-    let resposta;
+    let usuario;
 
     try {
-      resposta = await fetch(`${apiUrl}/api/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), senha }),
+      usuario = await requisitar("/users/login", {
+        metodo: "POST",
+        corpo: { email: email.trim(), senha },
       });
-    } catch {
-      mostrarAviso("Erro", "Não foi possível conectar ao servidor de login.");
+    } catch (erro) {
+      mostrarAviso("Erro", erro.message);
       return;
     }
 
-    const usuario = await resposta.json().catch(() => null);
-
-    if (!resposta.ok) {
-      mostrarAviso("Erro", usuario?.erro || "Não foi possível realizar o login.");
-      return;
-    }
-
-    if (typeof usuario?.nome !== "string" || !usuario.nome.trim()) {
+    if (
+      typeof usuario?._id !== "string" ||
+      typeof usuario?.nome !== "string" ||
+      !usuario.nome.trim()
+    ) {
       mostrarAviso("Erro", "O servidor retornou uma resposta de login inválida.");
       return;
     }
 
-    router.replace({ pathname: "/home", params: { nome: usuario.nome } });
+    salvarSessao(usuario, lembrar);
+    router.replace("/home");
   }
 
   function emBreve() {
