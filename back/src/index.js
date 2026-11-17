@@ -29,11 +29,14 @@ app.use(rotaNaoEncontrada)
 app.use(tratadorDeErros)
 
 // EVENT
-app.listen(3000, async () => {
+// No Render a porta vem na variável PORT; no seu PC continua 3000.
+const PORT = process.env.PORT || 3000
+
+app.listen(PORT, async () => {
     try {
         const result = await mongoose.connect(process.env.MONGODB_URI, { dbName: process.env.DB_NAME })
         console.log(result ? "Database On" : "Database Off")
-        console.log("Projeto ON")
+        console.log(`Projeto ON na porta ${PORT}`)
     }
     catch (err) {
         console.error("Erro ao conectar com o banco de dados", err)

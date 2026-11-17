@@ -1,3 +1,6 @@
+// No celular, liga um localStorage que fica salvo mesmo fechando o app.
+import "./armazenamento";
+
 const chaveSessao = "senna:sessao:v1";
 
 // No navegador existem localStorage/sessionStorage. No celular (iOS/Android)

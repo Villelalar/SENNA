@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "front",
-    "slug": "front",
+    "name": "Pense Bem",
+    "slug": "pense-bem",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "front",
+    "scheme": "pensebem",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -17,10 +17,12 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.senna.pensebem",
+      "versionCode": 1
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -33,11 +35,18 @@
           "imageWidth": 76
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "apiUrl": "https://COLOQUE-AQUI-O-ENDERECO.onrender.com"
     }
   }
 }

@@ -1,23 +1,33 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-// No celular, "localhost" aponta para o próprio aparelho, não para o PC.
-// Por isso, em desenvolvimento, usamos o mesmo IP que o Expo usa para
-// carregar o app (ex.: 192.168.0.10:8081) e trocamos a porta para a do back.
+// De onde vem o endereço do back:
+// 1) EXPO_PUBLIC_API_URL, se alguém definir (opcional);
+// 2) em desenvolvimento (expo start): o IP do seu PC, porta 3000;
+// 3) no APK, na versão web publicada e nas atualizações: "extra.apiUrl"
+//    do app.json (endereço do back no Render).
 function descobrirApiUrl() {
   const definida = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (definida) return definida;
 
-  if (Platform.OS !== "web") {
-    const hostUri =
-      Constants.expoConfig?.hostUri ||
-      Constants.expoGoConfig?.debuggerHost ||
-      "";
-    const host = hostUri.split(":")[0];
-    if (host && !host.endsWith(".exp.direct")) {
-      return `http://${host}:3000`;
+  if (__DEV__) {
+    if (Platform.OS !== "web") {
+      // No celular, "localhost" é o próprio aparelho; usamos o IP do PC
+      // que o Expo usou para carregar o app.
+      const hostUri =
+        Constants.expoConfig?.hostUri ||
+        Constants.expoGoConfig?.debuggerHost ||
+        "";
+      const host = hostUri.split(":")[0];
+      if (host && !host.endsWith(".exp.direct")) {
+        return `http://${host}:3000`;
+      }
     }
+    return "http://localhost:3000";
   }
+
+  const producao = Constants.expoConfig?.extra?.apiUrl?.trim();
+  if (producao) return producao;
 
   return "http://localhost:3000";
 }
