@@ -46,7 +46,7 @@
       "policy": "appVersion"
     },
     "extra": {
-      "apiUrl": "https://COLOQUE-AQUI-O-ENDERECO.onrender.com"
+      "apiUrl": "https://senna-api.onrender.com"
     }
   }
 }
