@@ -1,0 +1,63 @@
+classDiagram
+    direction TB
+    class ItemNavegacao {
+        <<tipo de dado>>
+        +string rotulo
+        +string|null rota
+        +Componente icone
+        +Componente iconeAtivo
+    }
+    class Programa {
+        <<tipo de dado>>
+        +string id
+        +number totalPerguntas
+        +number respondidas
+    }
+    class ProgramaJogo {
+        <<tipo de dado>>
+        +string id
+        +string titulo
+        +string descricao
+        +number progresso
+        +string cor
+    }
+    class BookScreen {
+        <<tela · rota /book>>
+        -List~Programa~ programasDemo
+        -List~string~ coresDosProgramas
+        -List~ItemNavegacao~ itensNavegacao
+        +abrirPrograma(programa)
+        +aoSelecionarNavegacao(item, ativo)
+    }
+    class Gamescreen {
+        <<tela · rota /games>>
+        -List~ProgramaJogo~ programas
+        -List~ItemNavegacao~ itensNavegacao
+        +voltar()
+        +aoSelecionarNavegacao(item, ativo)
+    }
+    class CardLivroEscolhido {
+        <<componente>>
+        +string titulo
+        +List~Programa~ programas
+        +number perguntasRespondidas
+        +string capa
+    }
+    class CardPrograma {
+        <<componente>>
+        +string id
+        +number respondidas
+        +number totalPerguntas
+        +string cor
+        +onSelecionar()
+    }
+    BookScreen "1" *-- "4" ItemNavegacao
+    Gamescreen "1" *-- "4" ItemNavegacao
+    BookScreen "1" *-- "5" Programa
+    Gamescreen "1" *-- "6" ProgramaJogo
+    BookScreen ..> CardLivroEscolhido : usa
+    BookScreen ..> CardPrograma : usa
+    CardLivroEscolhido o-- Programa
+    note for ItemNavegacao "Mesma lista nas duas telas (Inicio /home, Jogos /games, Livros /book, Perfil null)"
+    note for Gamescreen "Navegação via expo-router: useRouter() (push, replace, back, canGoBack) e usePathname()"
+    note for BookScreen "Mesma navegação via expo-router (useRouter e usePathname)"

@@ -1,10 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
-import { useLocalSearchParams } from 'expo-router';
+import "../../../CSS/Screen/homeScreen.css";
 
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useCallback, useState } from "react";
 import {
-  Alert,
   ImageBackground,
   Platform,
   ScrollView,
@@ -16,77 +16,165 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import BarraNavegacao from "../../components/BarraNavegacao";
+import { obterEstatisticas } from "../../data/estatisticas.js";
+import { carregarProgramas } from "../../data/partida";
+import { lerSessao } from "../../data/sessao";
+import { avisar } from "../../utils/avisos";
+
+const ehWeb = Platform.OS === "web";
+const Fundo = ehWeb ? View : ImageBackground;
+const propsFundo = ehWeb
+  ? {}
+  : { source: require("../../../assets/nuvens.png"), resizeMode: "cover" };
+
 const opcoes = [
   {
     titulo: "Jogos",
-    descricao: "12 disponíveis",
+    descricao: "Programas do livro",
+    rota: "/games",
     icone: "game-controller",
     cor: "#e64e42",
-    fundo: "#fff2f0",
-    borda: "#df8a83",
+    fundo: "#fde3df",
+    borda: "#ee8f86",
+    gradiente:
+      "linear-gradient(135deg, #f9a89d 0%, #fcd3cd 45%, #fff5f3 100%)",
   },
   {
     titulo: "Livros",
     descricao: "Cap. 1 - Senna",
+    rota: "/book",
     icone: "book",
     cor: "#e4c300",
-    fundo: "#fffbed",
-    borda: "#e2cf68",
+    fundo: "#fff7d1",
+    borda: "#e9d46a",
+    gradiente:
+      "linear-gradient(135deg, #fffdf3 0%, #fff6c9 55%, #ffec98 100%)",
   },
   {
     titulo: "Estatística",
+    rota: "/estatistica",
     descricao: "Veja seus pontos",
     icone: "trending-up",
     cor: "#20bf59",
-    fundo: "#eefbf2",
-    borda: "#79c99a",
+    fundo: "#e1f7e8",
+    borda: "#7fd29f",
+    gradiente:
+      "linear-gradient(135deg, #b6eec6 0%, #dbf7e4 50%, #f4fdf7 100%)",
   },
   {
     titulo: "Perfil",
-    descricao: "Veja seu progresso",
+    rota: "/perfil",
+    descricao: "Ver seu progresso",
     icone: "person",
     cor: "#247c9e",
-    fundo: "#eff8fb",
-    borda: "#80adbd",
+    fundo: "#e3edf2",
+    borda: "#7fa6b8",
+    gradiente:
+      "linear-gradient(135deg, #9dbbca 0%, #d2e1e9 50%, #f8fbfc 100%)",
   },
 ];
 
+function saudacaoDoHorario() {
+  const hora = new Date().getHours();
+  if (hora < 12) return "Bom dia";
+  if (hora < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 export default function HomeScreen() {
-
-  const {nome} = useLocalSearchParams();
-  const inicial = nome ? nome.charAt(0).toUpperCase() : "";
-
+  const router = useRouter();
+  const { nome } = useLocalSearchParams();
+  const [nomeSessao, setNomeSessao] = useState(null);
+  const nomeRecebido =
+    nomeSessao ?? (Array.isArray(nome) ? nome[0] : nome);
+  const inicial = nomeRecebido?.trim().charAt(0).toUpperCase() || "L";
   const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [alturaVisivel, setAlturaVisivel] = useState(0);
+  const [alturaConteudo, setAlturaConteudo] = useState(0);
+  const [proximoPrograma, setProximoPrograma] = useState(null);
+  const [diasSeguidos, setDiasSeguidos] = useState(0);
+  const [programasDisponiveis, setProgramasDisponiveis] = useState(null);
+  const [saudacao, setSaudacao] = useState(saudacaoDoHorario);
 
-  const telaEstreita = width < 360;
-  const telaBaixa = height < 700;
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+      setNomeSessao(lerSessao()?.nome ?? null);
+      setSaudacao(saudacaoDoHorario());
 
-  const margem = telaEstreita ? 12 : 20;
+      carregarProgramas()
+        .then((lista) => {
+          if (!ativo) return;
+          setProgramasDisponiveis(
+            lista.filter((programa) => programa.disponivel).length,
+          );
+        })
+        .catch(() => {});
 
-  const larguraConteudo = Math.max(
-    0,
-    Math.min(width - margem * 2 - insets.left - insets.right, 480),
+      obterEstatisticas()
+        .then((estatisticas) => {
+          if (!ativo) return;
+          setProximoPrograma(estatisticas.proximoPrograma);
+          setDiasSeguidos(estatisticas.diasSeguidos);
+        })
+        .catch(() => {});
+
+      return () => {
+        ativo = false;
+      };
+    }, []),
   );
 
-  const colunas = larguraConteudo < 290 || fontScale > 1.3 ? 1 : 2;
+  const podeRolar = alturaVisivel > 0 && alturaConteudo > alturaVisivel;
 
-  const espaco = 12;
+  const larguraUtil = width - insets.left - insets.right;
+  const alturaUtil = height - insets.top - insets.bottom;
+  const telaEstreita = larguraUtil < 360;
+  const telaCompacta = telaEstreita || alturaUtil < 680;
+  const margem = telaEstreita ? 12 : 16;
+  const larguraConteudo = Math.max(0, Math.min(larguraUtil - margem * 2, 480));
+  const colunas = larguraConteudo < 260 || fontScale > 1.3 ? 1 : 2;
+  const espaco = telaCompacta ? 10 : 14;
   const larguraCard = (larguraConteudo - espaco * (colunas - 1)) / colunas;
-
-  const tamanhoTitulo = telaEstreita ? 26 : 30;
+  const tamanhoTitulo = telaCompacta ? 26 : 30;
 
   function opcaoIndisponivel() {
-    if (Platform.OS === "web") {
-      window.alert("Esta opção está indisponível.");
+    avisar("Opção indisponível", "Esta opção está indisponível.");
+  }
+
+  function continuarJogo() {
+    setMenuAberto(false);
+
+    const params = nomeRecebido ? { nome: nomeRecebido } : {};
+
+    if (proximoPrograma) {
+      router.push({
+        pathname: "/jogocap",
+        params: { ...params, programa: proximoPrograma.codigo },
+      });
     } else {
-      Alert.alert("Opção indisponível", "Esta opção está indisponível.");
+      router.push({ pathname: "/book", params });
     }
   }
 
-  function selecionarOpcao() {
+  function selecionarOpcao(opcao) {
     setMenuAberto(false);
+
+    if (opcao.rota) {
+      const recebeNome =
+        opcao.rota === "/estatistica" || opcao.rota === "/perfil";
+
+      if (recebeNome && nomeRecebido) {
+        router.push({ pathname: opcao.rota, params: { nome: nomeRecebido } });
+      } else {
+        router.push(opcao.rota);
+      }
+      return;
+    }
+
     opcaoIndisponivel();
   }
 
@@ -94,22 +182,27 @@ export default function HomeScreen() {
     <View style={styles.tela}>
       <StatusBar style="dark" />
 
-      <ImageBackground
-        source={require("../../../assets/nuvens.png")}
-        style={styles.fundo}
-        resizeMode="cover"
-      >
+      <Fundo style={styles.fundo} {...propsFundo}>
+        {ehWeb && <div className="home-camada home-fundo" aria-hidden="true" />}
+
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[
             styles.areaRolagem,
             {
-              paddingTop: insets.top + (telaBaixa ? 16 : 28),
-              paddingBottom: insets.bottom + 28,
+              paddingTop: insets.top + (telaCompacta ? 8 : 16),
+              paddingBottom: telaCompacta ? 8 : 12,
               paddingLeft: margem + insets.left,
               paddingRight: margem + insets.right,
             },
           ]}
+          onLayout={({ nativeEvent }) => {
+            setAlturaVisivel(nativeEvent.layout.height);
+          }}
+          onContentSizeChange={(_, altura) => setAlturaConteudo(altura)}
+          scrollEnabled={podeRolar}
+          bounces={false}
+          overScrollMode="never"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -122,14 +215,13 @@ export default function HomeScreen() {
                   <View style={[styles.quadrado, styles.verde]} />
                   <View style={[styles.quadrado, styles.azul]} />
                 </View>
-
                 <Text style={styles.nomeMarca}>Tectoy</Text>
               </View>
 
               <View style={styles.acoes}>
                 <TouchableOpacity
                   style={styles.perfil}
-                  onPress={opcaoIndisponivel}
+                  onPress={() => selecionarOpcao({ rota: "/perfil" })}
                   accessibilityLabel="Abrir perfil"
                   accessibilityRole="button"
                 >
@@ -158,11 +250,10 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     key={opcao.titulo}
                     style={styles.botaoMenu}
-                    onPress={selecionarOpcao}
+                    onPress={() => selecionarOpcao(opcao)}
                     accessibilityRole="button"
                   >
                     <Ionicons name={opcao.icone} size={20} color={opcao.cor} />
-
                     <Text style={styles.itemMenu}>{opcao.titulo}</Text>
                   </TouchableOpacity>
                 ))}
@@ -170,9 +261,12 @@ export default function HomeScreen() {
             )}
 
             <View
-              style={[styles.apresentacao, { marginTop: telaBaixa ? 24 : 36 }]}
+              style={[
+                styles.apresentacao,
+                { marginTop: telaCompacta ? 12 : 20 },
+              ]}
             >
-              <Text style={styles.saudacao}>Boa tarde</Text>
+              <Text style={styles.saudacao}>{saudacao}</Text>
 
               <Text
                 style={[
@@ -192,15 +286,19 @@ export default function HomeScreen() {
                 <View style={styles.circuloFogo}>
                   <Ionicons name="flame" size={14} color="#fff" />
                 </View>
-
-                <Text style={styles.dias}>6 dias</Text>
+                <Text style={styles.dias}>
+                  {diasSeguidos} {diasSeguidos === 1 ? "dia" : "dias"}
+                </Text>
                 <Text style={styles.seguidos}>seguidos</Text>
               </View>
             </View>
 
             <TouchableOpacity
-              style={styles.continuar}
-              onPress={opcaoIndisponivel}
+              style={[
+                styles.continuar,
+                telaCompacta && styles.continuarCompacto,
+              ]}
+              onPress={continuarJogo}
               activeOpacity={0.8}
               accessibilityRole="button"
             >
@@ -210,16 +308,21 @@ export default function HomeScreen() {
 
               <View style={styles.textosContinuar}>
                 <View style={styles.etiqueta}>
-                  <Text style={styles.txtContinuar}>Continuar</Text>
+                  <Text style={styles.txtContinuar}>
+                    {proximoPrograma ? "Continuar" : "Ver programas"}
+                  </Text>
                 </View>
-
                 <Text style={styles.capitulo}>
-                  Capítulo 1 - Início Ayrton Senna
+                  {proximoPrograma?.titulo ??
+                    "Capítulo 1 - Início Ayrton Senna"}
                 </Text>
-
-                <Text style={styles.questoes}>
-                  Faltam 12 questões para fechar
-                </Text>
+                {proximoPrograma && (
+                  <Text style={styles.questoes}>
+                    {proximoPrograma.revisao
+                      ? "Questões sorteadas dos programas anteriores"
+                      : `${proximoPrograma.totalPerguntas} questões neste programa`}
+                  </Text>
+                )}
               </View>
             </TouchableOpacity>
 
@@ -229,31 +332,56 @@ export default function HomeScreen() {
                   key={opcao.titulo}
                   style={[
                     styles.card,
+                    telaCompacta && styles.cardCompacto,
                     {
                       width: larguraCard,
                       backgroundColor: opcao.fundo,
                       borderColor: opcao.borda,
                     },
                   ]}
-                  onPress={opcaoIndisponivel}
+                  onPress={() => selecionarOpcao(opcao)}
                   activeOpacity={0.8}
                   accessibilityRole="button"
                 >
+                  {ehWeb && (
+                    <div
+                      className="home-camada"
+                      aria-hidden="true"
+                      style={{ background: opcao.gradiente }}
+                    />
+                  )}
+
                   <View
-                    style={[styles.iconeOpcao, { backgroundColor: opcao.cor }]}
+                    style={[
+                      styles.iconeOpcao,
+                      telaCompacta && styles.iconeOpcaoCompacto,
+                      { backgroundColor: opcao.cor },
+                    ]}
                   >
                     <Ionicons name={opcao.icone} size={22} color="#fff" />
                   </View>
 
                   <Text style={styles.txtOpcao}>{opcao.titulo}</Text>
-
-                  <Text style={styles.descricao}>{opcao.descricao}</Text>
+                  <Text style={styles.descricao}>
+                    {opcao.rota === "/games" && programasDisponiveis !== null
+                      ? `${programasDisponiveis} ${
+                          programasDisponiveis === 1
+                            ? "disponível"
+                            : "disponíveis"
+                        }`
+                      : opcao.descricao}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         </ScrollView>
-      </ImageBackground>
+
+        <BarraNavegacao
+          ativo="Início"
+          params={nomeRecebido ? { nome: nomeRecebido } : undefined}
+        />
+      </Fundo>
     </View>
   );
 }
@@ -268,9 +396,9 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+    minHeight: 0,
   },
   areaRolagem: {
-    flexGrow: 1,
     alignItems: "center",
   },
   conteudo: {
@@ -349,13 +477,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   menu: {
+    position: "absolute",
+    top: 56,
+    right: 0,
+    zIndex: 20,
+    elevation: 8,
     width: "100%",
     maxWidth: 320,
-    alignSelf: "flex-end",
-    marginTop: 12,
     padding: 10,
     borderRadius: 12,
     backgroundColor: "rgba(255,255,255,0.97)",
+    boxShadow: "0px 8px 24px rgba(30, 30, 60, 0.12)",
   },
   botaoMenu: {
     minHeight: 44,
@@ -394,9 +526,11 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 20,
     paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginTop: 14,
+    paddingLeft: 6,
+    paddingRight: 16,
+    marginTop: 12,
     backgroundColor: "#fff",
+    boxShadow: "0px 4px 14px rgba(30, 30, 60, 0.08)",
   },
   circuloFogo: {
     width: 24,
@@ -407,26 +541,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dias: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "500",
     color: "#1e1e1e",
   },
   seguidos: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#555",
   },
   continuar: {
     width: "100%",
-    minHeight: 90,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     padding: 12,
-    marginTop: 24,
+    marginTop: 20,
     backgroundColor: "rgba(255,255,255,0.94)",
     borderWidth: 1,
-    borderColor: "#dd8e87",
+    borderColor: "#ee8f86",
     borderRadius: 12,
+    boxShadow: "0px 6px 18px rgba(30, 30, 60, 0.06)",
+  },
+  continuarCompacto: {
+    marginTop: 12,
+    padding: 10,
   },
   iconePlay: {
     width: 44,
@@ -466,14 +604,19 @@ const styles = StyleSheet.create({
   grade: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginTop: 12,
+    marginTop: 14,
   },
   card: {
-    minHeight: 130,
+    minHeight: 110,
     padding: 14,
     justifyContent: "center",
     borderWidth: 1,
     borderRadius: 12,
+    boxShadow: "0px 6px 18px rgba(30, 30, 60, 0.06)",
+  },
+  cardCompacto: {
+    minHeight: 92,
+    padding: 10,
   },
   iconeOpcao: {
     width: 40,
@@ -481,16 +624,23 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 6,
+  },
+  iconeOpcaoCompacto: {
+    width: 34,
+    height: 34,
+    marginBottom: 4,
   },
   txtOpcao: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#202020",
+    position: "relative",
+    fontSize: 19,
+    fontWeight: "500",
+    color: "#1d1d1d",
   },
   descricao: {
+    position: "relative",
     fontSize: 12,
-    color: "#707070",
-    marginTop: 4,
+    color: "#4f4f4f",
+    marginTop: 2,
   },
 });

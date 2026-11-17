@@ -631,7 +631,7 @@ const perguntas = [
   { livro: idProg5, numero: 128, categoria: "Emerson Fittipaldi",
     enunciado: "Qual é o apelido de Emerson Fittipaldi?",
     alternativas: ["Vesgo", "Rato", "Tatu", "Moco"],
-    respostaCorreta: null }, // ⚠ não confirmado - verificar no livro
+    respostaCorreta: "Rato" },
   { livro: idProg5, numero: 129, categoria: "Emerson Fittipaldi",
     enunciado: "Estreou na F1 no GP da Inglaterra de 1970, pilotando um Lotus. Que classificação obteve nessa primeira prova?",
     alternativas: ["3º lugar", "1º lugar", "não classificou", "8º lugar"],

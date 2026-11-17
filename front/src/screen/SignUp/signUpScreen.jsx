@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -13,17 +14,46 @@ import {
   View,
 } from "react-native";
 
+import { requisitar } from "../../data/api";
+
 const fonte = Platform.OS === "ios" ? "Courier New" : "monospace";
+const dataMinima = "1900-01-01";
+
+function hojeIso() {
+  return new Date().toLocaleDateString("sv-SE");
+}
 
 export default function SignUpScreen() {
+  const router = useRouter();
+  const { height } = useWindowDimensions();
 
   const [dataNascimento, setDataNascimento] = useState("");
   const [nome, setNome] = useState("");
   const [sobrenome, setSobrenome] = useState("");
+  const [curso, setCurso] = useState("");
+  const [instituicao, setInstituicao] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const router = useRouter();
-  const { height } = useWindowDimensions();
+  const cadastroEmAndamento = useRef(false);
+
+  // Rolagem própria dos campos do card + atalho "próximo" no teclado
+  const rolagemCampos = useRef(null);
+  const campoNome = useRef(null);
+  const campoSobrenome = useRef(null);
+  const campoCurso = useRef(null);
+  const campoInstituicao = useRef(null);
+  const campoEmail = useRef(null);
+  const campoSenha = useRef(null);
+  const alturaCampos = Math.max(220, Math.min(height * 0.42, 420));
+
+  useEffect(() => {
+    // Mostra a barra de rolagem por um instante para indicar que dá pra rolar
+    const timer = setTimeout(
+      () => rolagemCampos.current?.flashScrollIndicators?.(),
+      600,
+    );
+    return () => clearTimeout(timer);
+  }, []);
 
   function mostrarAviso(titulo, mensagem) {
     if (Platform.OS === "web") {
@@ -34,34 +64,49 @@ export default function SignUpScreen() {
   }
 
   async function cadastrar() {
-    
-    if (!email.trim() || !senha.trim() || !nome.trim() || !sobrenome.trim() || !dataNascimento.trim()) {
-      mostrarAviso("Atenção", "Preencha todos os campos.");
+    if (cadastroEmAndamento.current) return;
+
+    if (
+      !dataNascimento.trim() ||
+      !nome.trim() ||
+      !sobrenome.trim() ||
+      !email.trim() ||
+      !senha.trim()
+    ) {
+      mostrarAviso("Atenção", "Preencha todos os campos obrigatórios (*).");
       return;
     }
+
+    if (
+      Platform.OS === "web" &&
+      (dataNascimento < dataMinima || dataNascimento > hojeIso())
+    ) {
+      mostrarAviso("Atenção", "Informe uma data de nascimento válida.");
+      return;
+    }
+
     const nomeCompleto = `${nome.trim()} ${sobrenome.trim()}`;
-    console.log("Dados do cadastro:", { nomeCompleto, email, senha, dataNascimento });
+    cadastroEmAndamento.current = true;
 
-        try {
-          const data = await fetch("http://localhost:3000/api/users/create", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome: nomeCompleto, email, senha }),
-          });  
+    try {
+      await requisitar("/users/create", {
+        metodo: "POST",
+        corpo: {
+          nome: nomeCompleto,
+          email: email.trim(),
+          senha,
+          curso: curso.trim(),
+          instituicao: instituicao.trim(),
+        },
+      });
 
-          const response = await data.json();
-          console.log(data.status, response);
-
-        if (data.status == 201) {
-          console.log("Cadastro bem-sucedido:", data); 
-           mostrarAviso("Sucesso", "Cadastro realizado com sucesso: "); 
-           router.replace("/");
-        }else {
-          mostrarAviso("Erro", "Falha ao realizar cadastro: "  + response.erro);
-        }
-        }catch (error) {
-          mostrarAviso("Erro", "Falha ao realizar cadastro: " + error.message);
-        }
+      mostrarAviso("Sucesso", "Cadastro realizado com sucesso.");
+      router.replace("/login");
+    } catch (erro) {
+      mostrarAviso("Erro", erro.message);
+    } finally {
+      cadastroEmAndamento.current = false;
+    }
   }
 
   function entrarComGoogle() {
@@ -69,7 +114,10 @@ export default function SignUpScreen() {
   }
 
   return (
-    <View style={styles.fundo}>
+    <KeyboardAvoidingView
+      style={styles.fundo}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <Image
         source={require("../../../assets/images/gradiente.jpg")}
         style={[styles.gradiente, { height: height * 0.45 }]}
@@ -82,6 +130,8 @@ export default function SignUpScreen() {
           { paddingTop: height * 0.15 },
         ]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
       >
         <View style={styles.titulo}>
           <View style={styles.marca}>
@@ -109,56 +159,142 @@ export default function SignUpScreen() {
 
         <View style={styles.conteudo}>
           <View style={styles.formulario}>
-            <TextInput
-              style={styles.input}
-              placeholder="Data de nascimento (DD/MM/AAAA)"
-              placeholderTextColor="#777"
-              keyboardType="numbers-and-punctuation"
-              onChangeText={setDataNascimento}
-              value={dataNascimento}
-            />
+            <Text style={styles.legenda}>* Campos obrigatórios</Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Nome"
-              placeholderTextColor="#777"
-              autoCapitalize="words"
-              onChangeText={setNome}
-              value={nome}
-            />
+            <ScrollView
+              ref={rolagemCampos}
+              style={[styles.rolagemCampos, { maxHeight: alturaCampos }]}
+              contentContainerStyle={styles.campos}
+              nestedScrollEnabled
+              persistentScrollbar
+              showsVerticalScrollIndicator
+              keyboardShouldPersistTaps="handled"
+              automaticallyAdjustKeyboardInsets
+            >
+              {Platform.OS === "web" ? (
+                <label style={estilosWeb.campoData}>
+                  <span style={estilosWeb.rotuloData}>
+                    Data de nascimento *
+                  </span>
+                  <input
+                    type="date"
+                    value={dataNascimento}
+                    min={dataMinima}
+                    max={hojeIso()}
+                    onChange={(evento) =>
+                      setDataNascimento(evento.target.value)
+                    }
+                    onClick={(evento) => {
+                      try {
+                        evento.currentTarget.showPicker?.();
+                      } catch {}
+                    }}
+                    style={{
+                      ...estilosWeb.inputData,
+                      color: dataNascimento ? "#222" : "#777",
+                    }}
+                  />
+                </label>
+              ) : (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Data de nascimento (DD/MM/AAAA) *"
+                  value={dataNascimento}
+                  onChangeText={setDataNascimento}
+                  placeholderTextColor="#777"
+                  keyboardType="numbers-and-punctuation"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => campoNome.current?.focus()}
+                />
+              )}
 
-            <TextInput
-              style={styles.input}
-              placeholder="Sobrenome"
-              placeholderTextColor="#777"
-              autoCapitalize="words"
-              onChangeText={setSobrenome}
-              value={sobrenome}
-            />
+              <TextInput
+                ref={campoNome}
+                style={styles.input}
+                placeholder="Nome *"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => campoSobrenome.current?.focus()}
+                value={nome}
+                onChangeText={setNome}
+                placeholderTextColor="#777"
+                autoCapitalize="words"
+              />
 
-            <TextInput
-              style={styles.input}
-              placeholder="E-mail"
-              placeholderTextColor="#777"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              value={email}
-              onChangeText={setEmail}
-            />
+              <TextInput
+                ref={campoSobrenome}
+                style={styles.input}
+                placeholder="Sobrenome *"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => campoCurso.current?.focus()}
+                value={sobrenome}
+                onChangeText={setSobrenome}
+                placeholderTextColor="#777"
+                autoCapitalize="words"
+              />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Sua senha"
-              placeholderTextColor="#777"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="new-password"
-              onChangeText={setSenha}
-              value={senha}
-            />
+              <TextInput
+                ref={campoCurso}
+                style={styles.input}
+                placeholder="Curso (opcional)"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => campoInstituicao.current?.focus()}
+                value={curso}
+                onChangeText={setCurso}
+                placeholderTextColor="#777"
+                autoCapitalize="words"
+                maxLength={100}
+              />
+
+              <TextInput
+                ref={campoInstituicao}
+                style={styles.input}
+                placeholder="Instituição (opcional)"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => campoEmail.current?.focus()}
+                value={instituicao}
+                onChangeText={setInstituicao}
+                placeholderTextColor="#777"
+                autoCapitalize="words"
+                maxLength={100}
+              />
+
+              <TextInput
+                ref={campoEmail}
+                style={styles.input}
+                placeholder="E-mail *"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => campoSenha.current?.focus()}
+                value={email}
+                onChangeText={setEmail}
+                placeholderTextColor="#777"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+              />
+
+              <TextInput
+                ref={campoSenha}
+                style={styles.input}
+                placeholder="Sua senha *"
+                returnKeyType="done"
+                blurOnSubmit={true}
+                onSubmitEditing={cadastrar}
+                value={senha}
+                onChangeText={setSenha}
+                placeholderTextColor="#777"
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="new-password"
+              />
+            </ScrollView>
 
             <Pressable
               style={styles.botao}
@@ -180,9 +316,35 @@ export default function SignUpScreen() {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
+
+const estilosWeb = {
+  campoData: {
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  },
+  rotuloData: {
+    fontFamily: fonte,
+    fontSize: 12,
+    color: "#555",
+  },
+  inputData: {
+    width: "100%",
+    boxSizing: "border-box",
+    border: "1px solid #ccc",
+    borderRadius: 8,
+    padding: "13px 12px",
+    fontFamily: fonte,
+    fontSize: 14,
+    backgroundColor: "#fff",
+    outline: "none",
+    cursor: "pointer",
+  },
+};
 
 const styles = StyleSheet.create({
   fundo: {
@@ -272,6 +434,21 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 15,
     alignItems: "center",
+  },
+  rolagemCampos: {
+    width: "100%",
+    flexGrow: 0,
+  },
+  campos: {
+    gap: 15,
+    paddingRight: 4,
+    paddingBottom: 2,
+  },
+  legenda: {
+    alignSelf: "flex-start",
+    fontFamily: fonte,
+    fontSize: 12,
+    color: "#555",
   },
   input: {
     width: "100%",

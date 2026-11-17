@@ -1,0 +1,30 @@
+stateDiagram-v2
+    direction LR
+    AcertoPag : rota /acertopag
+    [*] --> Index
+    Index --> Login : Redirect /login
+    Login --> Home : replace /home<br/>(e-mail e senha preenchidos)
+    Login --> SignUp : push /signup
+    SignUp --> Login : replace /login
+    Book --> JogoCap : push /jogocap<br/>(toque no card do programa)
+    Book --> Games : barra "Jogos"<br/>replace /games
+    Book --> Home : barra "Início"<br/>replace /home
+    Games --> Book : barra "Livros"<br/>replace /book
+    Games --> Home : barra "Início"<br/>ou seta voltar sem histórico
+    Games --> TelaAnterior : seta voltar com histórico<br/>back
+    JogoCap --> Home : seta voltar sem histórico
+    JogoCap --> Book : seta voltar com histórico<br/>back
+    FimPrograma --> Index : "Voltar ao início"<br/>replace /
+    note right of Home
+        Todas as opções de Home mostram "indisponível"
+        e Home não tem barra de navegação:
+        Livros e Jogos só abrem pela URL.
+    end note
+    note right of Book
+        Perfil (rota null) só exibe aviso.
+        A seta voltar de Book ainda não tem ação.
+    end note
+    note right of AcertoPag
+        AcertoPag e FimPrograma existem como rotas,
+        mas nenhuma tela navega para elas ainda.
+    end note

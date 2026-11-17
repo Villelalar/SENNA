@@ -1,0 +1,50 @@
+classDiagram
+    direction LR
+    class Livro {
+        <<model · coleção livros>>
+        +String codigo [unico]
+        +String titulo
+        +Date createdAt
+        +Date updatedAt
+    }
+    class Pergunta {
+        <<model · coleção perguntas>>
+        +ObjectId livro
+        +Number numero
+        +String categoria
+        +String enunciado
+        +List~String~ alternativas [min 4]
+        +String respostaCorreta [oculta nas consultas]
+        indice unico (livro, numero)
+    }
+    class Usuario {
+        <<model · coleção usuarios>>
+        +String nome
+        +String email [unico]
+        +String senha [hash bcrypt]
+    }
+    class Jogo {
+        <<catalogo em memoria · 11 jogos>>
+        +String slug
+        +String nome
+        +String descricao
+        +String correcao [servidor ou cliente]
+    }
+    class API {
+        <<Express /api · referencia>>
+        GET /livros
+        GET /livros/:codigo
+        GET /livros/:codigo/perguntas
+        GET /livros/:codigo/perguntas/:numero
+        GET /jogos
+        POST /users/create
+        POST /users/login
+        GET /users/:id
+        GET /users/nome/:nome
+    }
+    Livro "1" <-- "0..*" Pergunta : pertence a
+    API ..> Livro
+    API ..> Pergunta
+    API ..> Usuario
+    API ..> Jogo
+    note for API "Contrato lido do back-end (somente leitura). O front ainda NAO chama nenhum endpoint."

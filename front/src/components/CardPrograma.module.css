@@ -1,0 +1,91 @@
+.card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 22px;
+  box-shadow: 0px 6px 18px rgba(30, 30, 60, 0.06);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card:hover {
+  box-shadow: 0px 8px 22px rgba(30, 30, 60, 0.1);
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+.card:focus-visible {
+  outline: 3px solid #1561b9;
+  outline-offset: 2px;
+}
+
+.selo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #ffffff;
+}
+
+.textos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.titulo {
+  font-size: 17px;
+  font-weight: 800;
+  color: #15141e;
+}
+
+.progresso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.barra {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background-color: #e5e2ef;
+  overflow: hidden;
+}
+
+.barraPreenchida {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background-color: #29b877;
+  transition: width 0.3s ease;
+}
+
+.contagem {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #55515e;
+}
+
+.seta {
+  flex-shrink: 0;
+  color: #9a97a8;
+}

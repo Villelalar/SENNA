@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    actor U as Jogador
+    participant S as Seta ArrowBack (Games)
+    participant G as Gamescreen
+    participant R as expo-router
+    U->>S: clica ou toca
+    S->>G: onClick → voltar()
+    G->>R: router.canGoBack()
+    alt existe tela anterior no histórico
+        R-->>G: true
+        G->>R: router.back()
+        R-->>U: tela anterior
+    else sem histórico (ex.: página aberta pela URL)
+        R-->>G: false
+        G->>R: router.replace("/home")
+        R-->>U: tela inicial (/home)
+    end

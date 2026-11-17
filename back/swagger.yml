@@ -45,11 +45,21 @@ paths:
                   type: string
                   format: password
                   example: '123456'
+                curso:
+                  type: string
+                  maxLength: 100
+                  description: Opcional; vazio nao e gravado
+                  example: Sistemas de Informação
+                instituicao:
+                  type: string
+                  maxLength: 100
+                  description: Opcional; vazio nao e gravado
+                  example: UniLaSalle
       responses:
         '201':
           description: Usuario criado com sucesso
         '400':
-          description: Dados obrigatorios ausentes ou invalidos (e-mail @gmail.com, senha ate 8 caracteres)
+          description: Dados obrigatorios ausentes ou invalidos (e-mail @gmail.com, senha ate 8 caracteres, curso e instituicao ate 100 caracteres)
         '409':
           description: E-mail ja cadastrado
   /api/users/{id}:
@@ -64,6 +74,151 @@ paths:
       responses:
         '200':
           description: Usuario encontrado
+        '404':
+          description: Usuario nao encontrado
+    put:
+      summary: Atualiza nome, curso e instituicao do usuario
+      parameters:
+        - $ref: '#/components/parameters/IdUsuario'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nome
+              properties:
+                nome:
+                  type: string
+                  example: Maria Silva
+                curso:
+                  type: string
+                  maxLength: 100
+                  description: Opcional; vazio ou ausente remove o campo
+                  example: Sistemas de Informação
+                instituicao:
+                  type: string
+                  maxLength: 100
+                  description: Opcional; vazio ou ausente remove o campo
+                  example: UniLaSalle
+      responses:
+        '200':
+          description: Usuario atualizado (sem a senha)
+        '400':
+          description: Dados invalidos ou ID invalido
+        '404':
+          description: Usuario nao encontrado
+  /api/users/{id}/partidas:
+    get:
+      summary: Lista as partidas concluidas pelo usuario
+      parameters:
+        - $ref: '#/components/parameters/IdUsuario'
+      responses:
+        '200':
+          description: Lista de partidas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Partida'
+        '404':
+          description: Usuario nao encontrado
+    post:
+      summary: Registra o resultado de um programa concluido (pontos calculados no servidor)
+      parameters:
+        - $ref: '#/components/parameters/IdUsuario'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - codigo
+                - totais
+              properties:
+                codigo:
+                  type: string
+                  example: '011'
+                totais:
+                  type: array
+                  description: Acertos na 1a, 2a e 3a tentativa e perguntas sem acerto
+                  items:
+                    type: integer
+                  example: [20, 5, 3, 2]
+                dia:
+                  type: integer
+                  description: Dia local do jogador (dias desde 01/01/1970), usado na sequencia de dias
+                  example: 20774
+      responses:
+        '201':
+          description: Partida registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partida'
+        '400':
+          description: Dados invalidos
+        '404':
+          description: Usuario ou livro nao encontrado
+    delete:
+      summary: Zera o progresso (remove todas as partidas do usuario)
+      parameters:
+        - $ref: '#/components/parameters/IdUsuario'
+      responses:
+        '200':
+          description: Partidas removidas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  removidas:
+                    type: integer
+                    example: 3
+        '404':
+          description: Usuario nao encontrado
+  /api/users/{id}/atividade:
+    get:
+      summary: Lista os dias em que o usuario respondeu pelo menos uma pergunta
+      parameters:
+        - $ref: '#/components/parameters/IdUsuario'
+      responses:
+        '200':
+          description: Dias ativos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dias:
+                    type: array
+                    items:
+                      type: integer
+                    example: [20773, 20774]
+        '404':
+          description: Usuario nao encontrado
+    post:
+      summary: Marca um dia como ativo (usado na sequencia de dias)
+      parameters:
+        - $ref: '#/components/parameters/IdUsuario'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dia:
+                  type: integer
+                  description: Dia local do jogador (dias desde 01/01/1970)
+                  example: 20774
+      responses:
+        '201':
+          description: Dia registrado
+        '400':
+          description: Dados invalidos
         '404':
           description: Usuario nao encontrado
   /api/users/nome/{nome}:
@@ -120,7 +275,19 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Livro'
+                  allOf:
+                    - $ref: '#/components/schemas/Livro'
+                    - type: object
+                      properties:
+                        totalPerguntas:
+                          type: integer
+                          example: 30
+                        disponivel:
+                          type: boolean
+                          description: true quando todas as perguntas do programa tem gabarito
+                        revisao:
+                          type: boolean
+                          description: true para o programa de revisao (perguntas sorteadas dos demais)
   /api/livros/{codigo}:
     get:
       summary: Busca um livro pelo codigo
@@ -143,7 +310,7 @@ paths:
           description: Livro nao encontrado
   /api/livros/{codigo}/perguntas:
     get:
-      summary: Lista as perguntas de um livro (sem a resposta correta)
+      summary: Lista as perguntas de um livro (sem a resposta correta). No programa de revisao (016) sorteia 6 perguntas de cada programa.
       parameters:
         - $ref: '#/components/parameters/CodigoLivro'
         - name: categoria
@@ -185,6 +352,44 @@ paths:
           description: Numero da pergunta invalido
         '404':
           description: Livro ou pergunta nao encontrados
+  /api/perguntas/{id}/responder:
+    post:
+      summary: Corrige a alternativa escolhida para uma pergunta
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - alternativa
+              properties:
+                alternativa:
+                  type: integer
+                  description: Indice (0 a 3) da alternativa escolhida
+                  example: 2
+      responses:
+        '200':
+          description: Resultado da correcao
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  acertou:
+                    type: boolean
+        '400':
+          description: Alternativa ou ID invalidos
+        '404':
+          description: Pergunta nao encontrada
+        '409':
+          description: Pergunta sem gabarito
   /api/jogos:
     get:
       summary: Lista os modos de jogo disponiveis
@@ -199,6 +404,12 @@ paths:
                   $ref: '#/components/schemas/Jogo'
 components:
   parameters:
+    IdUsuario:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
     CodigoLivro:
       name: codigo
       in: path
@@ -237,6 +448,28 @@ components:
           items:
             type: string
           example: [Mônaco, San Marino, Portugal, Luxemburgo]
+    Partida:
+      type: object
+      properties:
+        _id:
+          type: string
+        codigo:
+          type: string
+          example: '011'
+        pontos:
+          type: integer
+          example: 73
+        totais:
+          type: array
+          items:
+            type: integer
+          example: [20, 5, 3, 2]
+        dia:
+          type: integer
+          example: 20774
+        createdAt:
+          type: string
+          format: date-time
     Jogo:
       type: object
       properties:

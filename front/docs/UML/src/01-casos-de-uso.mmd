@@ -1,0 +1,27 @@
+flowchart LR
+    J(["👤 Jogador"])
+    subgraph SIS["Sistema: Pense Bem (front-end mobile)"]
+        direction TB
+        UC1(["Entrar (login)"])
+        UC2(["Cadastrar-se"])
+        UC3(["Ver tela inicial"])
+        UC4(["Navegar pela barra inferior<br/>Início · Jogos · Livros · Perfil"])
+        UC5(["Ver livro e programas"])
+        UC6(["Abrir um programa<br/>(tela do jogo)"])
+        UC7(["Ver lista de jogos"])
+        UC8(["Voltar à tela anterior"])
+        UC9(["Ver aviso<br/>'opção indisponível'"])
+    end
+    J --- UC1
+    J --- UC2
+    J --- UC3
+    J --- UC4
+    J --- UC5
+    J --- UC6
+    J --- UC7
+    J --- UC8
+    UC4 -. "«include» quando rota = null (Perfil)" .-> UC9
+    UC4 -. "«extend» Livros" .-> UC5
+    UC4 -. "«extend» Jogos" .-> UC7
+    UC5 -. "«include»" .-> UC6
+    UC2 -. "«include» (cadastro ainda sem back-end)" .-> UC9

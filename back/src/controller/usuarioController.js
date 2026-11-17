@@ -1,13 +1,14 @@
 import Usuario from '../models/usuario.js'
 import {validarLogin,validarCadastro} from '../service/validarLogin.js'
+import { validarPerfil } from '../service/validarPerfil.js'
 
 export async function criarUsuario(req, res) {
 
 	try {
 		
-		const { nome, email, senha } = validarCadastro(req.body)
+		const dados = validarCadastro(req.body)
 
-		const usuarioCriado = await Usuario.create({ nome, email, senha })
+		const usuarioCriado = await Usuario.create(dados)
 		const usuarioSemSenha = usuarioCriado.toObject()
 		delete usuarioSemSenha.senha
 
@@ -56,6 +57,39 @@ export async function loginUsuario(req, res) {
 	} catch (error) {
 		if (error.status) {
 			return res.status(error.status).json({ erro: error.message })
+		}
+
+		return res.status(500).json({ erro: error.message })
+	}
+}
+
+export async function atualizarPerfil(req, res) {
+	try {
+		const dados = validarPerfil(req.body)
+		const usuario = await Usuario.findById(req.params.id)
+
+		if (!usuario) {
+			return res.status(404).json({ erro: 'Usuário não encontrado' })
+		}
+
+		usuario.set(dados)
+		await usuario.save()
+
+		const usuarioSemSenha = usuario.toObject()
+		delete usuarioSemSenha.senha
+
+		return res.json(usuarioSemSenha)
+	} catch (error) {
+		if (error.status) {
+			return res.status(error.status).json({ erro: error.message })
+		}
+
+		if (error.name === 'CastError') {
+			return res.status(400).json({ erro: 'ID de usuário inválido' })
+		}
+
+		if (error.name === 'ValidationError') {
+			return res.status(400).json({ erro: error.message })
 		}
 
 		return res.status(500).json({ erro: error.message })

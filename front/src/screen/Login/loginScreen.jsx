@@ -3,7 +3,6 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-
 import {
   Alert,
   Image,
@@ -16,6 +15,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+
+import { requisitar } from "../../data/api";
+import { salvarSessao } from "../../data/sessao";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -34,34 +36,35 @@ export default function LoginScreen() {
   }
 
   async function entrar() {
-
     if (!email.trim() || !senha.trim()) {
       mostrarAviso("Atenção", "Preencha o email e a senha.");
       return;
     }
-        try {
-          const data = await fetch("http://localhost:3000/api/users/login", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, senha }),
-          });  
 
-          const response = await data.json();
-          console.log(data.status, response);
+    let usuario;
 
-        if (data.status == 200) {
-          console.log("Login bem-sucedido:", data); 
-           mostrarAviso("Sucesso", "Login realizado Com Sucesso: "); 
-           router.replace({ pathname: "/home" , params: { nome: response.nome } });
-        }else {
-          mostrarAviso("Erro", "Falha ao realizar login: "  + response.erro);
-        }
-        }catch (error) {
-          mostrarAviso("Erro", "Falha ao realizar login: " + error.message);
-        }
+    try {
+      usuario = await requisitar("/users/login", {
+        metodo: "POST",
+        corpo: { email: email.trim(), senha },
+      });
+    } catch (erro) {
+      mostrarAviso("Erro", erro.message);
+      return;
+    }
 
+    if (
+      typeof usuario?._id !== "string" ||
+      typeof usuario?.nome !== "string" ||
+      !usuario.nome.trim()
+    ) {
+      mostrarAviso("Erro", "O servidor retornou uma resposta de login inválida.");
+      return;
+    }
 
-}
+    salvarSessao(usuario, lembrar);
+    router.replace("/home");
+  }
 
   function emBreve() {
     mostrarAviso("Em breve", "Esta opção está indisponível.");

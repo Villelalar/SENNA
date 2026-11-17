@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    actor U as Jogador
+    participant B as Botão .nav_item
+    participant T as Tela (Book ou Games)
+    participant R as expo-router
+    U->>B: clica ou toca em "Jogos"
+    B->>T: onClick → aoSelecionarNavegacao(item, ativo)
+    alt item.rota === null (Perfil)
+        T-->>U: window.alert("Esta opção está indisponível.")
+    else ativo === true (já está nessa página)
+        T-->>U: nada acontece
+    else rota válida
+        T->>R: router.replace(item.rota)
+        R-->>T: novo pathname (/games)
+        T->>T: ativo = (pathname === item.rota)
+        T-->>U: tela de destino com o botão em pílula escura<br/>aria-current="page"
+    end
+    Note over T,R: replace evita empilhar histórico
